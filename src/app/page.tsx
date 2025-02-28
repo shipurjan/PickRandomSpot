@@ -47,10 +47,6 @@ function HomeContent() {
     zoom: parseAsFloat.withDefault(2),
   });
 
-  // Parse json for points array (for polygon)
-  // @ts-expect-error asdf
-  const pointsParser = parseAsJson<Point[]>().withDefault([]);
-
   // State for shape
   const [shapeState, setShapeState] = useQueryStates({
     centerLat: parseAsFloat,
@@ -58,8 +54,9 @@ function HomeContent() {
     radiusX: parseAsFloat.withDefault(20000), // Default 20km
     radiusY: parseAsFloat.withDefault(20000),
     rotation: parseAsFloat.withDefault(0),
-    shapeType: { parse: parseShapeType, serialize: (v) => v },
-    points: pointsParser,
+    shapeType: { parse: parseShapeType, serialize: (v) => v, defaultValue: "ellipse" },
+    // @ts-expect-error  Parse json for points array (for polygon)
+    points: parseAsJson<Point[]>().withDefault([]),
   });
 
   // State for random point
