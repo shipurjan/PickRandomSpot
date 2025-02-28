@@ -1,4 +1,4 @@
-import { SetStateAction } from 'react';
+import { SetStateAction } from "react";
 
 export type SetterFunction<T> = (value: SetStateAction<T>) => void;
 
