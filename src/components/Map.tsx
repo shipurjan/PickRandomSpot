@@ -1,6 +1,6 @@
 // src/components/Map.tsx
 "use client";
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -35,10 +35,29 @@ function MapController({
   mapState,
   updateMapState,
   updateCircleState,
-}: Pick<MapProps, "mapState" | "updateMapState" | "updateCircleState">) {
+  circleState,
+}: Pick<
+  MapProps,
+  "mapState" | "updateMapState" | "updateCircleState" | "circleState"
+>) {
   const map = useMap();
   const hasInitialized = useRef(false);
   const isUserInteraction = useRef(false);
+  const isZooming = useRef(false);
+  const circlePositionRef = useRef({
+    lat: circleState.circleLat,
+    lng: circleState.circleLng,
+  });
+
+  // Store circle position in ref for stable access
+  useEffect(() => {
+    if (circleState.circleLat !== null && circleState.circleLng !== null) {
+      circlePositionRef.current = {
+        lat: circleState.circleLat,
+        lng: circleState.circleLng,
+      };
+    }
+  }, [circleState.circleLat, circleState.circleLng]);
 
   // Set initial map view only on first render
   useEffect(() => {
@@ -60,14 +79,20 @@ function MapController({
       });
       isUserInteraction.current = false;
     }
+
+    // Reset zoom state after move completes
+    isZooming.current = false;
   }, [map, updateMapState]);
 
   const handleMapClick: L.LeafletMouseEventHandlerFn = useCallback(
     (e) => {
-      updateCircleState({
-        circleLat: e.latlng.lat,
-        circleLng: e.latlng.lng,
-      });
+      // Only update circle position if not during a zoom operation
+      if (!isZooming.current) {
+        updateCircleState({
+          circleLat: e.latlng.lat,
+          circleLng: e.latlng.lng,
+        });
+      }
     },
     [updateCircleState],
   );
@@ -79,6 +104,9 @@ function MapController({
     },
     moveend: handleMoveEnd,
     click: handleMapClick,
+    zoomstart: () => {
+      isZooming.current = true;
+    },
   });
 
   return null;
@@ -95,11 +123,34 @@ export default function MapComponent({
   const { circleLat, circleLng, radius } = circleState;
   const { randomLat, randomLng } = randomPointState;
 
+  // Local state for circle to prevent flickering during rapid changes
+  const [localCircle, setLocalCircle] = useState({
+    lat: circleLat,
+    lng: circleLng,
+    radius: radius,
+  });
+
+  // Sync local circle state with URL params, but only when values stabilize
+  useEffect(() => {
+    // Use a timeout to debounce updates to local circle
+    const timer = setTimeout(() => {
+      setLocalCircle({
+        lat: circleLat,
+        lng: circleLng,
+        radius: radius,
+      });
+    }, 50); // Short debounce time for better responsiveness
+
+    return () => clearTimeout(timer);
+  }, [circleLat, circleLng, radius]);
+
   return (
     <MapContainer
       center={[lat, lng]}
       zoom={zoom}
       style={{ height: "100%", width: "100%" }}
+      zoomAnimation={true}
+      fadeAnimation={true}
     >
       <LeafletIconFix />
       <TileLayer
@@ -111,16 +162,19 @@ export default function MapComponent({
         mapState={mapState}
         updateMapState={updateMapState}
         updateCircleState={updateCircleState}
+        circleState={circleState}
       />
 
-      {/* Selected area circle */}
-      {circleLat !== null && circleLng !== null && radius !== null && (
-        <Circle
-          center={[circleLat, circleLng]}
-          radius={radius}
-          pathOptions={{ color: "blue", fillColor: "#30f", fillOpacity: 0.2 }}
-        />
-      )}
+      {/* Selected area circle - using local state to prevent flickering */}
+      {localCircle.lat !== null &&
+        localCircle.lng !== null &&
+        localCircle.radius !== null && (
+          <Circle
+            center={[localCircle.lat, localCircle.lng]}
+            radius={localCircle.radius}
+            pathOptions={{ color: "blue", fillColor: "#30f", fillOpacity: 0.2 }}
+          />
+        )}
 
       {/* Random point marker */}
       {randomLat !== null && randomLng !== null && (

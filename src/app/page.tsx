@@ -23,31 +23,22 @@ export default function Home() {
 }
 
 function HomeContent() {
-  const [mapState, setMapState] = useQueryStates(
-    {
-      lat: parseAsFloat.withDefault(0),
-      lng: parseAsFloat.withDefault(0),
-      zoom: parseAsFloat.withDefault(2),
-    },
-    { throttleMs: 300 }, // Higher throttle time to prevent issues during map dragging
-  );
+  const [mapState, setMapState] = useQueryStates({
+    lat: parseAsFloat.withDefault(0),
+    lng: parseAsFloat.withDefault(0),
+    zoom: parseAsFloat.withDefault(2),
+  });
 
-  const [circleState, setCircleState] = useQueryStates(
-    {
-      circleLat: parseAsFloat,
-      circleLng: parseAsFloat,
-      radius: parseAsFloat.withDefault(5000),
-    },
-    { throttleMs: 300 },
-  );
+  const [circleState, setCircleState] = useQueryStates({
+    circleLat: parseAsFloat,
+    circleLng: parseAsFloat,
+    radius: parseAsFloat.withDefault(20000),
+  });
 
-  const [randomPointState, setRandomPointState] = useQueryStates(
-    {
-      randomLat: parseAsFloat,
-      randomLng: parseAsFloat,
-    },
-    { throttleMs: 300 },
-  );
+  const [randomPointState, setRandomPointState] = useQueryStates({
+    randomLat: parseAsFloat,
+    randomLng: parseAsFloat,
+  });
 
   // Update map state as an object instead of individual properties
   const updateMapState = (newState: Partial<typeof mapState>) => {

@@ -1,6 +1,6 @@
 // src/components/Sidebar.tsx
 "use client";
-import { useEffect, useState, ChangeEvent, useCallback } from "react";
+import { useEffect, useState, ChangeEvent, useCallback, useRef } from "react";
 import { generateRandomPointInCircle } from "@/lib/utils/randomPoint";
 import { SidebarProps } from "@/types";
 
@@ -13,26 +13,46 @@ export default function Sidebar({
   const { circleLat, circleLng, radius } = circleState;
   const { randomLat, randomLng } = randomPointState;
 
+  // Store radius input value in local state
   const [radiusInput, setRadiusInput] = useState(
     radius ? (radius / 1000).toString() : "5",
   );
 
-  // Update input when radius changes
+  // Ref to track if we're in the middle of changing the radius
+  const isChangingRadius = useRef(false);
+  // Debounce timer ref
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Update input when radius changes from outside
   useEffect(() => {
-    if (radius !== null) {
+    if (radius !== null && !isChangingRadius.current) {
       setRadiusInput((radius / 1000).toString());
     }
   }, [radius]);
 
-  // Handle radius slider change
+  // Handle radius slider change with debouncing
   const handleRadiusChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       setRadiusInput(value);
-      const newRadius = parseFloat(value) * 1000; // Convert km to meters
-      if (!isNaN(newRadius)) {
-        updateCircleState({ radius: newRadius });
+
+      // Mark that we're in the middle of changing
+      isChangingRadius.current = true;
+
+      // Clear any existing timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
+
+      // Set a debounce timer to update the actual state
+      debounceTimerRef.current = setTimeout(() => {
+        const newRadius = parseFloat(value) * 1000; // Convert km to meters
+        if (!isNaN(newRadius)) {
+          updateCircleState({ radius: newRadius });
+        }
+        // Mark that we're done changing
+        isChangingRadius.current = false;
+      }, 100); // Small delay to debounce rapid changes
     },
     [updateCircleState],
   );
