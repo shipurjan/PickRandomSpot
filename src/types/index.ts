@@ -44,7 +44,6 @@ export interface MapProps {
   updateShapeState: (newState: Partial<ShapeState>) => void;
   randomPointState: RandomPointState;
   isDrawingPolygon: boolean;
-  setIsDrawingPolygon: (isDrawing: boolean) => void;
   testPoints?: [number, number][]; // Add this line
 }
 

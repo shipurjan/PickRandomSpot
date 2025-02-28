@@ -106,7 +106,6 @@ function getPolygonBounds(polygon: Point[]): {
   return { minLat, maxLat, minLng, maxLng };
 }
 
-// Generate a random point within a polygon
 export function generateRandomPointInPolygon(
   polygon: Point[],
 ): [number, number] | null {
@@ -116,7 +115,7 @@ export function generateRandomPointInPolygon(
   const bounds = getPolygonBounds(polygon);
 
   // Maximum attempts to find a point inside the polygon
-  const maxAttempts = 100;
+  const maxAttempts = 1000; // Increase max attempts for complex polygons
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     // Generate random point within bounding box
@@ -133,16 +132,46 @@ export function generateRandomPointInPolygon(
     }
   }
 
-  // If we couldn't find a point after max attempts, return null
+  // If we couldn't find a point after max attempts, use a fallback method
+  // Find the centroid of the polygon as a last resort
+  const centroid = findPolygonCentroid(polygon);
+  if (centroid) {
+    return [centroid.lat, centroid.lng];
+  }
+
+  // If everything fails, return null
   return null;
+}
+
+// Helper function to find the centroid of a polygon
+function findPolygonCentroid(polygon: Point[]): Point | null {
+  if (polygon.length < 3) return null;
+
+  let sumLat = 0;
+  let sumLng = 0;
+
+  for (const point of polygon) {
+    sumLat += point.lat;
+    sumLng += point.lng;
+  }
+
+  return {
+    lat: sumLat / polygon.length,
+    lng: sumLng / polygon.length,
+  };
 }
 
 export function generateRandomPoint(
   shapeState: ShapeState,
 ): [number, number] | null {
-  if (!shapeState.center) return null;
-
   const { center, radiusX, radiusY, shapeType, rotation, points } = shapeState;
+
+  if (shapeType === "polygon") {
+    if (points.length < 3) return null;
+    return generateRandomPointInPolygon(points);
+  }
+
+  if (!center) return null;
 
   switch (shapeType) {
     case "ellipse":
@@ -161,8 +190,6 @@ export function generateRandomPoint(
         radiusY * 2, // Convert radius to height
         rotation,
       );
-    case "polygon":
-      return generateRandomPointInPolygon(points);
     default:
       return null;
   }

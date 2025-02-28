@@ -107,7 +107,6 @@ function MapController({
   updateShapeState,
   shapeState,
   isDrawingPolygon,
-  setIsDrawingPolygon,
 }: Pick<
   MapProps,
   | "mapState"
@@ -115,7 +114,6 @@ function MapController({
   | "updateShapeState"
   | "shapeState"
   | "isDrawingPolygon"
-  | "setIsDrawingPolygon"
 >) {
   const map = useMap();
   const hasInitialized = useRef(false);
@@ -165,21 +163,6 @@ function MapController({
         const newPoint = { lat: e.latlng.lat, lng: e.latlng.lng };
         const points = [...shapeState.points];
 
-        // If we have at least 3 points and clicked near the first point, close the polygon
-        if (points.length >= 3) {
-          const firstPoint = points[0];
-          const distance = map.distance(
-            new L.LatLng(firstPoint.lat, firstPoint.lng),
-            e.latlng,
-          );
-
-          // If clicking near the first point, close the polygon
-          if (distance < 20) {
-            setIsDrawingPolygon(false);
-            return;
-          }
-        }
-
         // Otherwise add the new point
         updateShapeState({ points: [...points, newPoint] });
       }
@@ -191,12 +174,10 @@ function MapController({
       }
     },
     [
-      map,
       updateShapeState,
       isDrawingPolygon,
       shapeState.shapeType,
       shapeState.points,
-      setIsDrawingPolygon,
     ],
   );
 
@@ -222,7 +203,6 @@ export default function MapComponent({
   updateShapeState,
   randomPointState,
   isDrawingPolygon,
-  setIsDrawingPolygon,
   testPoints = [], // Add default empty array
 }: MapProps) {
   const { lat, lng, zoom } = mapState;
@@ -249,7 +229,6 @@ export default function MapComponent({
         updateShapeState={updateShapeState}
         shapeState={shapeState}
         isDrawingPolygon={isDrawingPolygon}
-        setIsDrawingPolygon={setIsDrawingPolygon}
       />
 
       {/* Ellipse (rendered as polygon) */}

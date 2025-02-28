@@ -125,7 +125,6 @@ function HomeContent() {
           updateShapeState={updateShapeState}
           randomPointState={randomPointState}
           isDrawingPolygon={isDrawingPolygon}
-          setIsDrawingPolygon={setIsDrawingPolygon}
           testPoints={testPoints}
         />
       </div>

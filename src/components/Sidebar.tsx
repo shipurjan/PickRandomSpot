@@ -109,6 +109,11 @@ export default function Sidebar({
     if (result) {
       const [newLat, newLng] = result;
       setRandomPointState({ randomLat: newLat, randomLng: newLng });
+    } else {
+      // Add error message when point generation fails
+      console.error(
+        "Failed to generate a random point. Please try again or modify your shape.",
+      );
     }
   }, [shapeState, setRandomPointState]);
 
@@ -224,9 +229,21 @@ export default function Sidebar({
                 </p>
                 {points.length > 2 && (
                   <p className="mb-2">
-                    Click near the first point to complete the polygon.
+                    {/* Remove reference to clicking near first point */}
+                    Click &quot;Complete Drawing&quot; when you&apos;re finished
+                    adding points.
                   </p>
                 )}
+                <button
+                  className="px-2 py-1 rounded bg-green-600 hover:bg-green-700 text-white mt-2 mr-2"
+                  onClick={() => {
+                    // Complete the polygon instead of canceling
+                    setIsDrawingPolygon(false);
+                  }}
+                  disabled={points.length < 3}
+                >
+                  Complete Drawing
+                </button>
                 <button
                   className="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white mt-2"
                   onClick={() => {
@@ -243,7 +260,7 @@ export default function Sidebar({
                 <button
                   className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white mt-2"
                   onClick={() => {
-                    updateShapeState({ points: [] });
+                    // Keep existing points when redrawing
                     setIsDrawingPolygon(true);
                   }}
                 >
@@ -335,8 +352,9 @@ export default function Sidebar({
           style={{ backgroundColor: theme.colors.primary }}
           onClick={generateRandomSpot}
           disabled={
-            (shapeType === "polygon" && points.length < 3) ||
-            (shapeType !== "polygon" && !center)
+            (shapeState.shapeType === "polygon" &&
+              (!points || points.length < 3)) ||
+            (shapeState.shapeType !== "polygon" && !center)
           }
         >
           Generate Random Point
