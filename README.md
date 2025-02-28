@@ -1,5 +1,7 @@
 # PickRandomSpot 🌍🎲
 
+![An example screenshot](docs/showcase.png?raw=true "An example screenshot")
+
 ## Overview
 
 PickRandomSpot is an interactive web application that allows you to generate a random geographical point within a selected area on a world map. Perfect for adventurers, photographers, travelers, and anyone looking to explore new locations in a spontaneous way!
