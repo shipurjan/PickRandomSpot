@@ -66,6 +66,40 @@ function createEllipsePoints(
   return points;
 }
 
+function createRectanglePoints(
+  center: L.LatLng,
+  width: number,
+  height: number,
+  rotation: number,
+): L.LatLng[] {
+  const points: L.LatLng[] = [];
+  const rotationRad = (rotation * Math.PI) / 180;
+
+  // Create the four corners of a rectangle
+  const corners = [
+    [-width / 2, -height / 2], // bottom left
+    [width / 2, -height / 2], // bottom right
+    [width / 2, height / 2], // top right
+    [-width / 2, height / 2], // top left
+  ];
+
+  // Apply rotation and convert to lat/lng for each corner
+  for (const [x, y] of corners) {
+    // Apply rotation
+    const rotatedX = x * Math.cos(rotationRad) - y * Math.sin(rotationRad);
+    const rotatedY = x * Math.sin(rotationRad) + y * Math.cos(rotationRad);
+
+    // Convert to lat/lng offset
+    const lat = center.lat + rotatedY / 111111;
+    const lng =
+      center.lng + rotatedX / (111111 * Math.cos((center.lat * Math.PI) / 180));
+
+    points.push(new L.LatLng(lat, lng));
+  }
+
+  return points;
+}
+
 // Component to sync map with URL state
 function MapController({
   mapState,
@@ -195,7 +229,6 @@ export default function MapComponent({
   const { center, radiusX, radiusY, shapeType, rotation, points } = shapeState;
   const { randomLat, randomLng } = randomPointState;
 
-
   return (
     <MapContainer
       center={[lat, lng]}
@@ -235,12 +268,11 @@ export default function MapComponent({
       {/* Rectangle */}
       {center && shapeType === "rectangle" && (
         <Polygon
-          positions={createEllipsePoints(
+          positions={createRectanglePoints(
             new L.LatLng(center.lat, center.lng),
-            radiusX,
-            radiusY,
+            radiusX * 2, // Convert radius to full width
+            radiusY * 2, // Convert radius to full height
             rotation,
-            4,
           )}
           pathOptions={{ color: "blue", fillColor: "#30f", fillOpacity: 0.2 }}
         />
