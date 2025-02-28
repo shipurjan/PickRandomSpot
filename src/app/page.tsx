@@ -22,17 +22,11 @@ export default function Home() {
   );
 }
 
-// Parse shape type from URL
 const parseShapeType = (value: string | null): ShapeType => {
-  if (
-    value === "circle" ||
-    value === "ellipse" ||
-    value === "rectangle" ||
-    value === "polygon"
-  ) {
+  if (value === "ellipse" || value === "rectangle" || value === "polygon") {
     return value;
   }
-  return "circle"; // Default
+  return "ellipse"; // Default
 };
 
 function HomeContent() {

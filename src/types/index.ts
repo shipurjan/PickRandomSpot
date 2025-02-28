@@ -1,5 +1,5 @@
 // src/types/index.ts
-export type ShapeType = "circle" | "ellipse" | "rectangle" | "polygon";
+export type ShapeType = "ellipse" | "rectangle" | "polygon";
 
 export interface Point {
   lat: number;
@@ -20,7 +20,7 @@ export interface CircleState {
 
 export interface ShapeState {
   center: Point | null;
-  // For circle/ellipse: radiusX/radiusY in meters
+  // For ellipse: radiusX/radiusY in meters
   // For rectangle: width/height in meters
   radiusX: number;
   radiusY: number;

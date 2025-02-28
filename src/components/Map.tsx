@@ -217,15 +217,6 @@ export default function MapComponent({
         setIsDrawingPolygon={setIsDrawingPolygon}
       />
 
-      {/* Render appropriate shape based on type */}
-      {center && shapeType === "circle" && (
-        <Circle
-          center={[center.lat, center.lng]}
-          radius={radiusX}
-          pathOptions={{ color: "blue", fillColor: "#30f", fillOpacity: 0.2 }}
-        />
-      )}
-
       {/* Ellipse (rendered as polygon) */}
       {center && shapeType === "ellipse" && (
         <Polygon

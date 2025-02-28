@@ -95,7 +95,7 @@ export default function Sidebar({
         }
         // Mark that we're done changing
         isChangingValues.current = false;
-      }, 100); // Small delay to debounce rapid changes
+      }, 1); // Small delay to debounce rapid changes
     },
     [updateShapeState],
   );
@@ -160,22 +160,7 @@ export default function Sidebar({
 
       <div className="mb-4">
         <h2 className="text-lg font-semibold mb-2">Shape Type</h2>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            className={`px-2 py-1 rounded transition-colors ${
-              shapeType === "circle"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-700 hover:bg-gray-600"
-            }`}
-            style={
-              shapeType === "circle"
-                ? { backgroundColor: theme.shapes.circle.color }
-                : {}
-            }
-            onClick={() => handleShapeTypeChange("circle")}
-          >
-            Circle
-          </button>
+        <div className="grid grid-cols-3 gap-2">
           <button
             className={`px-2 py-1 rounded transition-colors ${
               shapeType === "ellipse"

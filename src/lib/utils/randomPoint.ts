@@ -18,23 +18,6 @@ export function metersToLatLng(
   return [baseLat + latOffset, baseLng + lngOffset];
 }
 
-// Generate a random point within a circle
-export function generateRandomPointInCircle(
-  centerLat: number,
-  centerLng: number,
-  radius: number,
-): [number, number] {
-  // Generate random angle and distance (using sqrt for uniform distribution)
-  const angle = Math.random() * 2 * Math.PI;
-  const distance = Math.sqrt(Math.random()) * radius;
-
-  // Convert to meters offset
-  const metersX = distance * Math.cos(angle);
-  const metersY = distance * Math.sin(angle);
-
-  return metersToLatLng([metersY, metersX], [centerLat, centerLng]);
-}
-
 // Generate a random point within an ellipse
 export function generateRandomPointInEllipse(
   centerLat: number,
@@ -154,7 +137,6 @@ export function generateRandomPointInPolygon(
   return null;
 }
 
-// Main function to generate a random point based on shape type
 export function generateRandomPoint(
   shapeState: ShapeState,
 ): [number, number] | null {
@@ -163,8 +145,6 @@ export function generateRandomPoint(
   const { center, radiusX, radiusY, shapeType, rotation, points } = shapeState;
 
   switch (shapeType) {
-    case "circle":
-      return generateRandomPointInCircle(center.lat, center.lng, radiusX);
     case "ellipse":
       return generateRandomPointInEllipse(
         center.lat,
