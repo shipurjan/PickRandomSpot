@@ -1,6 +1,6 @@
 // src/components/Map.tsx
 "use client";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -37,20 +37,29 @@ function MapController({
   updateCircleState,
 }: Pick<MapProps, "mapState" | "updateMapState" | "updateCircleState">) {
   const map = useMap();
+  const hasInitialized = useRef(false);
+  const isUserInteraction = useRef(false);
 
-  // Set initial map view
+  // Set initial map view only on first render
   useEffect(() => {
-    map.setView([mapState.lat, mapState.lng], mapState.zoom);
+    if (!hasInitialized.current) {
+      map.setView([mapState.lat, mapState.lng], mapState.zoom);
+      hasInitialized.current = true;
+    }
   }, [map, mapState.lat, mapState.lng, mapState.zoom]);
 
   // Use callback to ensure stable reference
   const handleMoveEnd = useCallback(() => {
-    const center = map.getCenter();
-    updateMapState({
-      lat: center.lat,
-      lng: center.lng,
-      zoom: map.getZoom(),
-    });
+    // Only update URL params if this was a user interaction
+    if (isUserInteraction.current) {
+      const center = map.getCenter();
+      updateMapState({
+        lat: center.lat,
+        lng: center.lng,
+        zoom: map.getZoom(),
+      });
+      isUserInteraction.current = false;
+    }
   }, [map, updateMapState]);
 
   const handleMapClick: L.LeafletMouseEventHandlerFn = useCallback(
@@ -65,6 +74,9 @@ function MapController({
 
   // Update state on map events
   useMapEvents({
+    movestart: () => {
+      isUserInteraction.current = true;
+    },
     moveend: handleMoveEnd,
     click: handleMapClick,
   });
