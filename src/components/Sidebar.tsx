@@ -1,43 +1,79 @@
 // src/components/Sidebar.tsx
 "use client";
 import { useEffect, useState, ChangeEvent, useCallback, useRef } from "react";
-import { generateRandomPointInCircle } from "@/lib/utils/randomPoint";
-import { SidebarProps } from "@/types";
+import { generateRandomPoint } from "@/lib/utils/randomPoint";
+import { SidebarProps, ShapeType } from "@/types";
+import { theme } from "@/lib/theme";
 
 export default function Sidebar({
-  circleState,
-  updateCircleState,
+  shapeState,
+  updateShapeState,
   randomPointState,
   setRandomPointState,
+  isDrawingPolygon,
+  setIsDrawingPolygon,
 }: SidebarProps) {
-  const { circleLat, circleLng, radius } = circleState;
+  const { center, radiusX, radiusY, shapeType, rotation, points } = shapeState;
   const { randomLat, randomLng } = randomPointState;
 
-  // Store radius input value in local state
-  const [radiusInput, setRadiusInput] = useState(
-    radius ? (radius / 1000).toString() : "5",
-  );
+  // Store input values in local state
+  const [radiusXInput, setRadiusXInput] = useState((radiusX / 1000).toString());
+  const [radiusYInput, setRadiusYInput] = useState((radiusY / 1000).toString());
+  const [rotationInput, setRotationInput] = useState(rotation.toString());
 
-  // Ref to track if we're in the middle of changing the radius
-  const isChangingRadius = useRef(false);
+  // Ref to track if we're in the middle of changing the values
+  const isChangingValues = useRef(false);
   // Debounce timer ref
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Update input when radius changes from outside
+  // Update inputs when values change from outside
   useEffect(() => {
-    if (radius !== null && !isChangingRadius.current) {
-      setRadiusInput((radius / 1000).toString());
+    if (!isChangingValues.current) {
+      setRadiusXInput((radiusX / 1000).toString());
+      setRadiusYInput((radiusY / 1000).toString());
+      setRotationInput(rotation.toString());
     }
-  }, [radius]);
+  }, [radiusX, radiusY, rotation]);
 
-  // Handle radius slider change with debouncing
-  const handleRadiusChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
+  // Handle shape type change
+  const handleShapeTypeChange = useCallback(
+    (newType: ShapeType) => {
+      // If switching from polygon to another shape, clear polygon points
+      if (shapeType === "polygon" && newType !== "polygon") {
+        updateShapeState({ points: [], shapeType: newType });
+      }
+      // If switching to polygon, prepare for drawing
+      else if (newType === "polygon") {
+        updateShapeState({ shapeType: newType });
+        setIsDrawingPolygon(true);
+      }
+      // Otherwise just update the shape type
+      else {
+        updateShapeState({ shapeType: newType });
+      }
+    },
+    [shapeType, updateShapeState, setIsDrawingPolygon],
+  );
+
+  // Handle value changes with debouncing
+  const handleValueChange = useCallback(
+    (
+      e: ChangeEvent<HTMLInputElement>,
+      valueType: "radiusX" | "radiusY" | "rotation",
+    ) => {
       const value = e.target.value;
-      setRadiusInput(value);
+
+      // Update local input state
+      if (valueType === "radiusX") {
+        setRadiusXInput(value);
+      } else if (valueType === "radiusY") {
+        setRadiusYInput(value);
+      } else if (valueType === "rotation") {
+        setRotationInput(value);
+      }
 
       // Mark that we're in the middle of changing
-      isChangingRadius.current = true;
+      isChangingValues.current = true;
 
       // Clear any existing timer
       if (debounceTimerRef.current) {
@@ -46,85 +82,260 @@ export default function Sidebar({
 
       // Set a debounce timer to update the actual state
       debounceTimerRef.current = setTimeout(() => {
-        const newRadius = parseFloat(value) * 1000; // Convert km to meters
-        if (!isNaN(newRadius)) {
-          updateCircleState({ radius: newRadius });
+        if (valueType === "radiusX" || valueType === "radiusY") {
+          const newRadius = parseFloat(value) * 1000; // Convert km to meters
+          if (!isNaN(newRadius)) {
+            updateShapeState({ [valueType]: newRadius });
+          }
+        } else if (valueType === "rotation") {
+          const newRotation = parseFloat(value);
+          if (!isNaN(newRotation)) {
+            updateShapeState({ rotation: newRotation });
+          }
         }
         // Mark that we're done changing
-        isChangingRadius.current = false;
+        isChangingValues.current = false;
       }, 100); // Small delay to debounce rapid changes
     },
-    [updateCircleState],
+    [updateShapeState],
   );
 
   // Generate a random point
-  const generateRandomPoint = useCallback(() => {
-    if (circleLat !== null && circleLng !== null && radius !== null) {
-      const [newLat, newLng] = generateRandomPointInCircle(
-        circleLat,
-        circleLng,
-        radius,
-      );
+  const generateRandomSpot = useCallback(() => {
+    const result = generateRandomPoint(shapeState);
+    if (result) {
+      const [newLat, newLng] = result;
       setRandomPointState({ randomLat: newLat, randomLng: newLng });
     }
-  }, [circleLat, circleLng, radius, setRandomPointState]);
+  }, [shapeState, setRandomPointState]);
 
   // Clear selection
   const clearSelection = useCallback(() => {
-    updateCircleState({
-      circleLat: null,
-      circleLng: null,
+    updateShapeState({
+      center: null,
+      points: [],
     });
     setRandomPointState({
       randomLat: null,
       randomLng: null,
     });
-  }, [updateCircleState, setRandomPointState]);
+    setIsDrawingPolygon(false);
+  }, [updateShapeState, setRandomPointState, setIsDrawingPolygon]);
+
+  // Convert a point from decimal degrees to DMS (degrees, minutes, seconds)
+  const toDMS = (coord: number, isLat: boolean) => {
+    const absolute = Math.abs(coord);
+    const degrees = Math.floor(absolute);
+    const minutesNotTruncated = (absolute - degrees) * 60;
+    const minutes = Math.floor(minutesNotTruncated);
+    const seconds = ((minutesNotTruncated - minutes) * 60).toFixed(2);
+
+    const direction = isLat ? (coord >= 0 ? "N" : "S") : coord >= 0 ? "E" : "W";
+
+    return `${degrees}° ${minutes}' ${seconds}" ${direction}`;
+  };
 
   return (
-    <div className="w-80 bg-black shadow-md p-4 overflow-auto h-screen">
+    <div className="w-80 bg-black shadow-md p-4 overflow-auto h-screen text-white">
       <h1 className="text-2xl font-bold mb-6">PickRandomSpot</h1>
 
       <div className="mb-6">
         <h2 className="text-lg font-semibold mb-2">Instructions</h2>
         <ol className="list-decimal pl-5 space-y-1 text-sm">
-          <li>Click anywhere on the map to select a center point</li>
-          <li>Adjust the radius of the circle using the slider</li>
+          <li>Select a shape type below</li>
           <li>
-            Click &quot;Generate Random Point&quot; to create a random point
+            {shapeType === "polygon"
+              ? "Click on the map to place polygon points. Finish by clicking near the first point."
+              : "Click anywhere on the map to select a center point"}
           </li>
+          <li>
+            {shapeType === "polygon"
+              ? "The polygon will automatically close when you complete it"
+              : "Adjust the size and shape using the controls below"}
+          </li>
+          <li>Click &quot;Generate Random Point&quot; when ready</li>
           <li>Share the URL to save your selection</li>
         </ol>
       </div>
 
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold mb-2">Shape Type</h2>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            className={`px-2 py-1 rounded transition-colors ${
+              shapeType === "circle"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-700 hover:bg-gray-600"
+            }`}
+            style={
+              shapeType === "circle"
+                ? { backgroundColor: theme.shapes.circle.color }
+                : {}
+            }
+            onClick={() => handleShapeTypeChange("circle")}
+          >
+            Circle
+          </button>
+          <button
+            className={`px-2 py-1 rounded transition-colors ${
+              shapeType === "ellipse"
+                ? "bg-emerald-600 text-white"
+                : "bg-gray-700 hover:bg-gray-600"
+            }`}
+            style={
+              shapeType === "ellipse"
+                ? { backgroundColor: theme.shapes.ellipse.color }
+                : {}
+            }
+            onClick={() => handleShapeTypeChange("ellipse")}
+          >
+            Ellipse
+          </button>
+          <button
+            className={`px-2 py-1 rounded transition-colors ${
+              shapeType === "rectangle"
+                ? "bg-amber-600 text-white"
+                : "bg-gray-700 hover:bg-gray-600"
+            }`}
+            style={
+              shapeType === "rectangle"
+                ? { backgroundColor: theme.shapes.rectangle.color }
+                : {}
+            }
+            onClick={() => handleShapeTypeChange("rectangle")}
+          >
+            Rectangle
+          </button>
+          <button
+            className={`px-2 py-1 rounded transition-colors ${
+              shapeType === "polygon"
+                ? "bg-purple-600 text-white"
+                : "bg-gray-700 hover:bg-gray-600"
+            }`}
+            style={
+              shapeType === "polygon"
+                ? { backgroundColor: theme.shapes.polygon.color }
+                : {}
+            }
+            onClick={() => handleShapeTypeChange("polygon")}
+          >
+            Polygon
+          </button>
+        </div>
+      </div>
+
       <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-2">Circle Settings</h2>
-        {circleLat !== null && circleLng !== null ? (
+        <h2 className="text-lg font-semibold mb-2">Shape Settings</h2>
+        {shapeType === "polygon" ? (
+          <div className="text-sm">
+            {isDrawingPolygon ? (
+              <div>
+                <p className="mb-2">
+                  Click on the map to add points. {points.length} points added
+                  so far.
+                </p>
+                {points.length > 2 && (
+                  <p className="mb-2">
+                    Click near the first point to complete the polygon.
+                  </p>
+                )}
+                <button
+                  className="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white mt-2"
+                  onClick={() => {
+                    updateShapeState({ points: [] });
+                    setIsDrawingPolygon(false);
+                  }}
+                >
+                  Cancel Drawing
+                </button>
+              </div>
+            ) : points.length > 2 ? (
+              <div>
+                <p className="mb-2">Polygon with {points.length} points</p>
+                <button
+                  className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white mt-2"
+                  onClick={() => {
+                    updateShapeState({ points: [] });
+                    setIsDrawingPolygon(true);
+                  }}
+                >
+                  Redraw Polygon
+                </button>
+              </div>
+            ) : (
+              <p className="text-gray-400">
+                Click on the map to start drawing a polygon.
+              </p>
+            )}
+          </div>
+        ) : center ? (
           <div>
             <div className="text-sm mb-4">
               <p>
                 <span className="font-medium">Center:</span>{" "}
-                {circleLat.toFixed(6)}, {circleLng.toFixed(6)}
+                {center.lat.toFixed(6)}, {center.lng.toFixed(6)}
+              </p>
+              <p className="text-gray-400 text-xs mt-1">
+                {toDMS(center.lat, true)}, {toDMS(center.lng, false)}
               </p>
             </div>
 
+            {/* Width/Radius X */}
             <div className="mb-4">
               <label className="block text-sm font-medium mb-1">
-                Radius (km): {radiusInput}
+                {shapeType === "rectangle" ? "Width" : "Radius X"} (km):{" "}
+                {radiusXInput}
               </label>
               <input
                 type="range"
                 min="0.1"
                 max="100"
                 step="0.1"
-                value={radiusInput}
-                onChange={handleRadiusChange}
+                value={radiusXInput}
+                onChange={(e) => handleValueChange(e, "radiusX")}
                 className="w-full"
               />
             </div>
+
+            {/* Height/Radius Y (only for ellipse and rectangle) */}
+            {(shapeType === "ellipse" || shapeType === "rectangle") && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">
+                  {shapeType === "rectangle" ? "Height" : "Radius Y"} (km):{" "}
+                  {radiusYInput}
+                </label>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="100"
+                  step="0.1"
+                  value={radiusYInput}
+                  onChange={(e) => handleValueChange(e, "radiusY")}
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            {/* Rotation (only for ellipse and rectangle) */}
+            {(shapeType === "ellipse" || shapeType === "rectangle") && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">
+                  Rotation (°): {rotationInput}
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="360"
+                  step="1"
+                  value={rotationInput}
+                  onChange={(e) => handleValueChange(e, "rotation")}
+                  className="w-full"
+                />
+              </div>
+            )}
           </div>
         ) : (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-400">
             No center point selected. Click on the map.
           </p>
         )}
@@ -132,15 +343,19 @@ export default function Sidebar({
 
       <div className="space-y-2">
         <button
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full transition-colors disabled:opacity-50"
-          onClick={generateRandomPoint}
-          disabled={circleLat === null || circleLng === null}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded w-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ backgroundColor: theme.colors.primary }}
+          onClick={generateRandomSpot}
+          disabled={
+            (shapeType === "polygon" && points.length < 3) ||
+            (shapeType !== "polygon" && !center)
+          }
         >
           Generate Random Point
         </button>
 
         <button
-          className="border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded w-full transition-colors"
+          className="border border-gray-500 hover:bg-gray-700 px-4 py-2 rounded w-full transition-colors"
           onClick={clearSelection}
         >
           Clear Selection
@@ -158,6 +373,9 @@ export default function Sidebar({
             <p>
               <span className="font-medium">Longitude:</span>{" "}
               {randomLng.toFixed(6)}
+            </p>
+            <p className="text-gray-400 text-xs mt-1">
+              {toDMS(randomLat, true)}, {toDMS(randomLng, false)}
             </p>
           </div>
         </div>

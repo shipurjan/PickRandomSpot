@@ -1,4 +1,11 @@
 // src/types/index.ts
+export type ShapeType = "circle" | "ellipse" | "rectangle" | "polygon";
+
+export interface Point {
+  lat: number;
+  lng: number;
+}
+
 export interface MapState {
   lat: number;
   lng: number;
@@ -11,6 +18,20 @@ export interface CircleState {
   radius: number | null;
 }
 
+export interface ShapeState {
+  center: Point | null;
+  // For circle/ellipse: radiusX/radiusY in meters
+  // For rectangle: width/height in meters
+  radiusX: number;
+  radiusY: number;
+  // For polygon: array of points
+  points: Point[];
+  // Current active shape
+  shapeType: ShapeType | null;
+  // For ellipse & rectangle: rotation in degrees
+  rotation: number;
+}
+
 export interface RandomPointState {
   randomLat: number | null;
   randomLng: number | null;
@@ -19,14 +40,18 @@ export interface RandomPointState {
 export interface MapProps {
   mapState: MapState;
   updateMapState: (newState: Partial<MapState>) => void;
-  circleState: CircleState;
-  updateCircleState: (newState: Partial<CircleState>) => void;
+  shapeState: ShapeState;
+  updateShapeState: (newState: Partial<ShapeState>) => void;
   randomPointState: RandomPointState;
+  isDrawingPolygon: boolean;
+  setIsDrawingPolygon: (isDrawing: boolean) => void;
 }
 
 export interface SidebarProps {
-  circleState: CircleState;
-  updateCircleState: (newState: Partial<CircleState>) => void;
+  shapeState: ShapeState;
+  updateShapeState: (newState: Partial<ShapeState>) => void;
   randomPointState: RandomPointState;
   setRandomPointState: (newState: Partial<RandomPointState>) => void;
+  isDrawingPolygon: boolean;
+  setIsDrawingPolygon: (isDrawing: boolean) => void;
 }
