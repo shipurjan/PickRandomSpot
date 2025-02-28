@@ -3,8 +3,9 @@
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/Sidebar";
 import NuqsProvider from "@/components/NuqsProvider";
-import { parseAsFloat, useQueryState } from "nuqs";
+import { parseAsFloat, useQueryStates } from "nuqs";
 import { Suspense } from "react";
+import { SidebarProps } from "@/types";
 
 // Dynamic import for Map to avoid SSR issues with Leaflet
 const MapWithNoSSR = dynamic(() => import("@/components/Map"), {
@@ -22,52 +23,57 @@ export default function Home() {
 }
 
 function HomeContent() {
-  // Map view state
-  const [lat, setLat] = useQueryState("lat", parseAsFloat.withDefault(0));
-  const [lng, setLng] = useQueryState("lng", parseAsFloat.withDefault(0));
-  const [zoom, setZoom] = useQueryState("zoom", parseAsFloat.withDefault(2));
-
-  // Circle selection state
-  const [circleLat, setCircleLat] = useQueryState("circleLat", parseAsFloat);
-  const [circleLng, setCircleLng] = useQueryState("circleLng", parseAsFloat);
-  const [radius, setRadius] = useQueryState(
-    "radius",
-    parseAsFloat.withDefault(5000),
+  const [mapState, setMapState] = useQueryStates(
+    {
+      lat: parseAsFloat.withDefault(0),
+      lng: parseAsFloat.withDefault(0),
+      zoom: parseAsFloat.withDefault(2),
+    },
+    { throttleMs: 300 }, // Higher throttle time to prevent issues during map dragging
   );
 
-  // Random point state
-  const [randomLat, setRandomLat] = useQueryState("randomLat", parseAsFloat);
-  const [randomLng, setRandomLng] = useQueryState("randomLng", parseAsFloat);
+  const [circleState, setCircleState] = useQueryStates(
+    {
+      circleLat: parseAsFloat,
+      circleLng: parseAsFloat,
+      radius: parseAsFloat.withDefault(5000),
+    },
+    { throttleMs: 300 },
+  );
+
+  const [randomPointState, setRandomPointState] = useQueryStates(
+    {
+      randomLat: parseAsFloat,
+      randomLng: parseAsFloat,
+    },
+    { throttleMs: 300 },
+  );
+
+  // Update map state as an object instead of individual properties
+  const updateMapState = (newState: Partial<typeof mapState>) => {
+    setMapState(newState);
+  };
+
+  // Update circle state as an object
+  const updateCircleState: SidebarProps["updateCircleState"] = (newState) => {
+    setCircleState(newState);
+  };
 
   return (
     <div className="flex h-screen">
       <Sidebar
-        circleLat={circleLat}
-        circleLng={circleLng}
-        radius={radius}
-        setRadius={setRadius}
-        randomLat={randomLat}
-        randomLng={randomLng}
-        setRandomLat={setRandomLat}
-        setRandomLng={setRandomLng}
-        setCircleLat={setCircleLat}
-        setCircleLng={setCircleLng}
+        circleState={circleState}
+        updateCircleState={updateCircleState}
+        randomPointState={randomPointState}
+        setRandomPointState={setRandomPointState}
       />
       <div className="flex-grow select-none">
         <MapWithNoSSR
-          lat={lat}
-          lng={lng}
-          zoom={zoom}
-          setLat={setLat}
-          setLng={setLng}
-          setZoom={setZoom}
-          circleLat={circleLat}
-          circleLng={circleLng}
-          radius={radius}
-          randomLat={randomLat}
-          randomLng={randomLng}
-          setCircleLat={setCircleLat}
-          setCircleLng={setCircleLng}
+          mapState={mapState}
+          updateMapState={updateMapState}
+          circleState={circleState}
+          updateCircleState={updateCircleState}
+          randomPointState={randomPointState}
         />
       </div>
     </div>

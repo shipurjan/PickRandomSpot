@@ -1,6 +1,6 @@
 // src/components/Map.tsx
 "use client";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -11,7 +11,7 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapProps, MapControllerProps } from "@/types";
+import { MapProps } from "@/types";
 
 // Fix Leaflet icons in Next.js
 function LeafletIconFix() {
@@ -32,54 +32,57 @@ function LeafletIconFix() {
 
 // Component to sync map with URL state
 function MapController({
-  lat,
-  lng,
-  zoom,
-  setLat,
-  setLng,
-  setZoom,
-  setCircleLat,
-  setCircleLng,
-}: MapControllerProps) {
+  mapState,
+  updateMapState,
+  updateCircleState,
+}: Pick<MapProps, "mapState" | "updateMapState" | "updateCircleState">) {
   const map = useMap();
 
   // Set initial map view
   useEffect(() => {
-    map.setView([lat, lng], zoom);
-  }, [map, lat, lng, zoom]);
+    map.setView([mapState.lat, mapState.lng], mapState.zoom);
+  }, [map, mapState.lat, mapState.lng, mapState.zoom]);
+
+  // Use callback to ensure stable reference
+  const handleMoveEnd = useCallback(() => {
+    const center = map.getCenter();
+    updateMapState({
+      lat: center.lat,
+      lng: center.lng,
+      zoom: map.getZoom(),
+    });
+  }, [map, updateMapState]);
+
+  const handleMapClick: L.LeafletMouseEventHandlerFn = useCallback(
+    (e) => {
+      updateCircleState({
+        circleLat: e.latlng.lat,
+        circleLng: e.latlng.lng,
+      });
+    },
+    [updateCircleState],
+  );
 
   // Update state on map events
   useMapEvents({
-    moveend: () => {
-      const center = map.getCenter();
-      setLat(center.lat);
-      setLng(center.lng);
-      setZoom(map.getZoom());
-    },
-    click: (e) => {
-      setCircleLat(e.latlng.lat);
-      setCircleLng(e.latlng.lng);
-    },
+    moveend: handleMoveEnd,
+    click: handleMapClick,
   });
 
   return null;
 }
 
 export default function MapComponent({
-  lat,
-  lng,
-  zoom,
-  setLat,
-  setLng,
-  setZoom,
-  circleLat,
-  circleLng,
-  radius,
-  randomLat,
-  randomLng,
-  setCircleLat,
-  setCircleLng,
+  mapState,
+  updateMapState,
+  circleState,
+  updateCircleState,
+  randomPointState,
 }: MapProps) {
+  const { lat, lng, zoom } = mapState;
+  const { circleLat, circleLng, radius } = circleState;
+  const { randomLat, randomLng } = randomPointState;
+
   return (
     <MapContainer
       center={[lat, lng]}
@@ -93,14 +96,9 @@ export default function MapComponent({
       />
 
       <MapController
-        lat={lat}
-        lng={lng}
-        zoom={zoom}
-        setLat={setLat}
-        setLng={setLng}
-        setZoom={setZoom}
-        setCircleLat={setCircleLat}
-        setCircleLng={setCircleLng}
+        mapState={mapState}
+        updateMapState={updateMapState}
+        updateCircleState={updateCircleState}
       />
 
       {/* Selected area circle */}

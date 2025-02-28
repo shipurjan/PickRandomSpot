@@ -1,21 +1,18 @@
 // src/components/Sidebar.tsx
 "use client";
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent, useCallback } from "react";
 import { generateRandomPointInCircle } from "@/lib/utils/randomPoint";
 import { SidebarProps } from "@/types";
 
 export default function Sidebar({
-  circleLat,
-  circleLng,
-  radius,
-  setRadius,
-  randomLat,
-  randomLng,
-  setRandomLat,
-  setRandomLng,
-  setCircleLat,
-  setCircleLng,
+  circleState,
+  updateCircleState,
+  randomPointState,
+  setRandomPointState,
 }: SidebarProps) {
+  const { circleLat, circleLng, radius } = circleState;
+  const { randomLat, randomLng } = randomPointState;
+
   const [radiusInput, setRadiusInput] = useState(
     radius ? (radius / 1000).toString() : "5",
   );
@@ -28,35 +25,41 @@ export default function Sidebar({
   }, [radius]);
 
   // Handle radius slider change
-  const handleRadiusChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setRadiusInput(value);
-    const newRadius = parseFloat(value) * 1000; // Convert km to meters
-    if (!isNaN(newRadius)) {
-      setRadius(newRadius);
-    }
-  };
+  const handleRadiusChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setRadiusInput(value);
+      const newRadius = parseFloat(value) * 1000; // Convert km to meters
+      if (!isNaN(newRadius)) {
+        updateCircleState({ radius: newRadius });
+      }
+    },
+    [updateCircleState],
+  );
 
   // Generate a random point
-  const generateRandomPoint = () => {
+  const generateRandomPoint = useCallback(() => {
     if (circleLat !== null && circleLng !== null && radius !== null) {
       const [newLat, newLng] = generateRandomPointInCircle(
         circleLat,
         circleLng,
         radius,
       );
-      setRandomLat(newLat);
-      setRandomLng(newLng);
+      setRandomPointState({ randomLat: newLat, randomLng: newLng });
     }
-  };
+  }, [circleLat, circleLng, radius, setRandomPointState]);
 
   // Clear selection
-  const clearSelection = () => {
-    setCircleLat(null);
-    setCircleLng(null);
-    setRandomLat(null);
-    setRandomLng(null);
-  };
+  const clearSelection = useCallback(() => {
+    updateCircleState({
+      circleLat: null,
+      circleLng: null,
+    });
+    setRandomPointState({
+      randomLat: null,
+      randomLng: null,
+    });
+  }, [updateCircleState, setRandomPointState]);
 
   return (
     <div className="w-80 bg-black shadow-md p-4 overflow-auto h-screen">
