@@ -189,10 +189,12 @@ export default function MapComponent({
   randomPointState,
   isDrawingPolygon,
   setIsDrawingPolygon,
+  testPoints = [], // Add default empty array
 }: MapProps) {
   const { lat, lng, zoom } = mapState;
   const { center, radiusX, radiusY, shapeType, rotation, points } = shapeState;
   const { randomLat, randomLng } = randomPointState;
+
 
   return (
     <MapContainer
@@ -275,6 +277,21 @@ export default function MapComponent({
             }}
           />
         ))}
+
+      {/* Test points */}
+      {testPoints.map((point, index) => (
+        <Circle
+          key={`test-point-${index}`}
+          center={[point[0], point[1]]}
+          radius={3}
+          pathOptions={{
+            color: "#ff0000",
+            fillColor: "#ff0000",
+            fillOpacity: 1.0,
+            weight: 3,
+          }}
+        />
+      ))}
 
       {/* Random point marker */}
       {randomLat !== null && randomLng !== null && (

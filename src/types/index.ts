@@ -45,6 +45,7 @@ export interface MapProps {
   randomPointState: RandomPointState;
   isDrawingPolygon: boolean;
   setIsDrawingPolygon: (isDrawing: boolean) => void;
+  testPoints?: [number, number][]; // Add this line
 }
 
 export interface SidebarProps {
@@ -54,4 +55,6 @@ export interface SidebarProps {
   setRandomPointState: (newState: Partial<RandomPointState>) => void;
   isDrawingPolygon: boolean;
   setIsDrawingPolygon: (isDrawing: boolean) => void;
+  addTestPoints?: (points: [number, number][]) => void;
+  clearTestPoints?: () => void;
 }

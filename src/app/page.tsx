@@ -30,6 +30,16 @@ const parseShapeType = (value: string | null): ShapeType => {
 };
 
 function HomeContent() {
+  const [testPoints, setTestPoints] = useState<[number, number][]>([]);
+
+  const addTestPoints = (points: [number, number][]) => {
+    setTestPoints((prev) => [...prev, ...points]);
+  };
+
+  const clearTestPoints = () => {
+    setTestPoints([]);
+  };
+
   // State for map view
   const [mapState, setMapState] = useQueryStates({
     lat: parseAsFloat.withDefault(0),
@@ -104,6 +114,8 @@ function HomeContent() {
         setRandomPointState={setRandomPointState}
         isDrawingPolygon={isDrawingPolygon}
         setIsDrawingPolygon={setIsDrawingPolygon}
+        addTestPoints={addTestPoints}
+        clearTestPoints={clearTestPoints}
       />
       <div className="flex-grow select-none">
         <MapWithNoSSR
@@ -114,6 +126,7 @@ function HomeContent() {
           randomPointState={randomPointState}
           isDrawingPolygon={isDrawingPolygon}
           setIsDrawingPolygon={setIsDrawingPolygon}
+          testPoints={testPoints}
         />
       </div>
     </div>

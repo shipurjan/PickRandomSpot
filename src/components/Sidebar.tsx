@@ -4,10 +4,13 @@ import { useEffect, useState, ChangeEvent, useCallback, useRef } from "react";
 import { generateRandomPoint } from "@/lib/utils/randomPoint";
 import { SidebarProps, ShapeType } from "@/types";
 import { theme } from "@/lib/theme";
+import TestMode from "./TestMode";
 
 export default function Sidebar({
   shapeState,
   updateShapeState,
+  addTestPoints,
+  clearTestPoints,
   randomPointState,
   setRandomPointState,
   isDrawingPolygon,
@@ -365,6 +368,16 @@ export default function Sidebar({
           </div>
         </div>
       )}
+
+      {process.env.NODE_ENV === "development" &&
+        addTestPoints &&
+        clearTestPoints && (
+          <TestMode
+            shapeState={shapeState}
+            addTestPoints={addTestPoints}
+            clearTestPoints={clearTestPoints}
+          />
+        )}
     </div>
   );
 }
