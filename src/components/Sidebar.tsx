@@ -1,13 +1,14 @@
 // src/components/Sidebar.tsx
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, ChangeEvent } from 'react'
 import { generateRandomPointInCircle } from '@/lib/utils/randomPoint'
+import { SidebarProps } from '@/types'
 
 export default function Sidebar({
   circleLat, circleLng, radius, setRadius,
   randomLat, randomLng, setRandomLat, setRandomLng,
   setCircleLat, setCircleLng
-}) {
+}: SidebarProps) {
   const [radiusInput, setRadiusInput] = useState(radius ? (radius / 1000).toString() : "5");
   
   // Update input when radius changes
@@ -18,7 +19,7 @@ export default function Sidebar({
   }, [radius]);
   
   // Handle radius slider change
-  const handleRadiusChange = (e) => {
+  const handleRadiusChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setRadiusInput(value);
     const newRadius = parseFloat(value) * 1000; // Convert km to meters
@@ -53,7 +54,7 @@ export default function Sidebar({
         <ol className="list-decimal pl-5 space-y-1 text-sm">
           <li>Click anywhere on the map to select a center point</li>
           <li>Adjust the radius of the circle using the slider</li>
-          <li>Click "Generate Random Point" to create a random point</li>
+          <li>Click &quot;Generate Random Point&quot; to create a random point</li>
           <li>Share the URL to save your selection</li>
         </ol>
       </div>

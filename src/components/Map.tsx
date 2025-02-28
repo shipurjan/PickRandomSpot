@@ -4,10 +4,12 @@ import { useEffect } from 'react'
 import { MapContainer, TileLayer, Circle, Marker, useMap, useMapEvents } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import { MapProps, MapControllerProps } from '@/types'
 
 // Fix Leaflet icons in Next.js
 function LeafletIconFix() {
   useEffect(() => {
+    // @ts-expect-error Property '_getIconUrl' exists on the prototype.
     delete L.Icon.Default.prototype._getIconUrl;
     L.Icon.Default.mergeOptions({
       iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -22,7 +24,7 @@ function LeafletIconFix() {
 // Component to sync map with URL state
 function MapController({ 
   lat, lng, zoom, setLat, setLng, setZoom, setCircleLat, setCircleLng 
-}) {
+}: MapControllerProps) {
   const map = useMap();
   
   // Set initial map view
@@ -50,7 +52,7 @@ function MapController({
 export default function MapComponent({
   lat, lng, zoom, setLat, setLng, setZoom,
   circleLat, circleLng, radius, randomLat, randomLng, setCircleLat, setCircleLng
-}) {
+}: MapProps) {
   return (
     <MapContainer
       center={[lat, lng]}

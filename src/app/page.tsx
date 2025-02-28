@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import Sidebar from '@/components/Sidebar'
 import NuqsProvider from '@/components/NuqsProvider'
 import { parseAsFloat, useQueryState } from 'nuqs'
+import { Suspense } from 'react'
 
 // Dynamic import for Map to avoid SSR issues with Leaflet
 const MapWithNoSSR = dynamic(() => import('@/components/Map'), {
@@ -12,9 +13,11 @@ const MapWithNoSSR = dynamic(() => import('@/components/Map'), {
 
 export default function Home() {
   return (
-    <NuqsProvider>
-      <HomeContent />
-    </NuqsProvider>
+    <Suspense>
+      <NuqsProvider>
+        <HomeContent />
+      </NuqsProvider>
+    </Suspense>
   )
 }
 
@@ -47,7 +50,7 @@ function HomeContent() {
         setCircleLat={setCircleLat}
         setCircleLng={setCircleLng}
       />
-      <div className="flex-grow">
+      <div className="flex-grow select-none">
         <MapWithNoSSR 
           lat={lat}
           lng={lng}
