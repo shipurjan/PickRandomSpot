@@ -8,31 +8,52 @@ import {
 } from "@/lib/utils/geohash";
 import { Point } from "@/types";
 
+// Read the geohash precision from the utility
+import { GEOHASH_PRECISION } from "@/lib/utils/geohash";
+
 /**
- * Custom parser for storing polygon points as an array of geohashes instead of
- * full JSON objects, resulting in much shorter URLs.
+ * Custom parser for storing polygon points as a concatenated string of geohashes
+ * without any separators, resulting in much shorter URLs.
  */
 export const parseAsGeohashPoints = createParser({
   parse(value: string | null) {
     if (!value) return [];
+
     try {
-      // Try to parse as geohash array first
-      const geohashes = JSON.parse(value) as string[];
-      if (typeof geohashes[0] === "string") {
+      // First check if it's using the new concatenated format
+      if (value.length % GEOHASH_PRECISION === 0) {
+        // New format: Split the string into chunks of GEOHASH_PRECISION
+        const geohashes: string[] = [];
+        for (let i = 0; i < value.length; i += GEOHASH_PRECISION) {
+          geohashes.push(value.slice(i, i + GEOHASH_PRECISION));
+        }
         return geohashesToPoints(geohashes);
       }
 
-      // If not a string array, it might be the old point object format
-      return JSON.parse(value) as Point[];
+      // Try to parse as JSON array (backward compatibility)
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        // If it's an array of strings, it's the old geohash array format
+        if (typeof parsed[0] === "string") {
+          return geohashesToPoints(parsed);
+        }
+        // If it's an array of objects, it's the old point object format
+        return parsed as Point[];
+      }
+
+      return [];
     } catch {
       return [];
     }
   },
   serialize(points: Point[] | null) {
     if (!points || points.length === 0) return "";
-    // Convert points to geohashes for more compact representation
+
+    // Convert points to geohashes
     const geohashes = pointsToGeohashes(points);
-    return JSON.stringify(geohashes);
+
+    // Simply concatenate all geohashes (each is GEOHASH_PRECISION characters long)
+    return geohashes.join("");
   },
 });
 
@@ -53,11 +74,6 @@ export const parseAsGeohashPoint = createParser<Point | null>({
     return pointToGeohash(point);
   },
 });
-
-/**
- * Custom parsers for coordinate pairs - replaces separate lat/lng parameters
- * with a single geohash parameter
- */
 
 // For map center position
 export const parseAsMapPosition = createParser<{ lat: number; lng: number }>({

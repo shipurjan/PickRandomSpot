@@ -2,8 +2,8 @@
 import { encodeBase32, decodeBase32 } from "geohashing";
 import { Point } from "@/types";
 
-const LATLNG_DECIMAL_PLACES = 6;
-const GEOHASH_PRECISION = 8;
+export const LATLNG_DECIMAL_PLACES = 6;
+export const GEOHASH_PRECISION = 8;
 
 /**
  * Round coordinate to specified decimal places
