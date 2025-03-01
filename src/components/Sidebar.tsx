@@ -148,7 +148,7 @@ export default function Sidebar({
     <div className="w-80 bg-black shadow-md p-4 overflow-auto h-screen text-white">
       <div className="flex flex-col items-center justify-center select-none">
         <Image
-          src="/logo.svg"
+          src="/PickRandomSpot/logo.svg"
           alt="PickRandomSpot logo"
           width="64"
           height="64"
