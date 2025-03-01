@@ -1,4 +1,4 @@
-[![](docs/logo_128.png)](#-PickRandomSpot) 
+[![](docs/logo_128.png)](#-PickRandomSpot)
 
 # PickRandomSpot
 
@@ -71,6 +71,16 @@ npm run dev
 - Uses `nuqs` for URL state management
 - Fully client-side application
 - Runs entirely in the user's browser
+
+### Geohash Technology
+
+PickRandomSpot utilizes [Geohash](https://en.wikipedia.org/wiki/Geohash), a geocoding system that encodes geographic coordinates into short alphanumeric strings. This allows us to:
+
+- Store spatial data like points and shapes efficiently in URL parameters
+- Enable compact, shareable links that preserve all map settings
+- Maintain precision while minimizing URL length
+
+We leverage the excellent [geohashing](https://github.com/arseny034/geohashing) npm library, which provides a robust implementation of the Geohash algorithm with both encoding and decoding capabilities. This library handles conversions between geographic coordinates and Geohash strings with configurable precision, making it perfect for our URL state management needs.
 
 ## Performance
 
