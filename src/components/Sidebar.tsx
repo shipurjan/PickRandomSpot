@@ -1,11 +1,13 @@
 // src/components/Sidebar.tsx
 "use client";
-import { useEffect, useState, ChangeEvent, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { generateRandomPoint } from "@/lib/utils/randomPoint";
 import { SidebarProps, ShapeType } from "@/types";
 import { theme } from "@/lib/theme";
 import Image from "next/image";
 import TestMode from "./TestMode";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 
 export default function Sidebar({
   shapeState,
@@ -59,13 +61,10 @@ export default function Sidebar({
     [shapeType, updateShapeState, setIsDrawingPolygon],
   );
 
-  // Handle value changes with debouncing
-  const handleValueChange = useCallback(
-    (
-      e: ChangeEvent<HTMLInputElement>,
-      valueType: "radiusX" | "radiusY" | "rotation",
-    ) => {
-      const value = e.target.value;
+  // Handle slider value changes
+  const handleSliderChange = useCallback(
+    (values: number[], valueType: "radiusX" | "radiusY" | "rotation") => {
+      const value = values[0].toString();
 
       // Update local input state
       if (valueType === "radiusX") {
@@ -145,7 +144,7 @@ export default function Sidebar({
   };
 
   return (
-    <div className="w-80 bg-black shadow-md p-4 overflow-auto h-screen text-white">
+    <div className="w-80 bg-background shadow-md p-4 overflow-auto h-screen text-white">
       <div className="flex flex-col items-center justify-center select-none">
         <Image
           src="/PickRandomSpot/logo.svg"
@@ -178,12 +177,9 @@ export default function Sidebar({
       <div className="mb-4">
         <h2 className="text-lg font-semibold mb-2">Shape Type</h2>
         <div className="grid grid-cols-3 gap-2">
-          <button
-            className={`px-2 py-1 rounded transition-colors ${
-              shapeType === "ellipse"
-                ? "bg-emerald-600 text-white"
-                : "bg-gray-700 hover:bg-gray-600"
-            }`}
+          <Button
+            className={shapeType === "ellipse" ? "text-white" : ""}
+            variant={shapeType === "ellipse" ? "default" : "outline"}
             style={
               shapeType === "ellipse"
                 ? { backgroundColor: theme.shapes.ellipse.color }
@@ -192,13 +188,10 @@ export default function Sidebar({
             onClick={() => handleShapeTypeChange("ellipse")}
           >
             Ellipse
-          </button>
-          <button
-            className={`px-2 py-1 rounded transition-colors ${
-              shapeType === "rectangle"
-                ? "bg-amber-600 text-white"
-                : "bg-gray-700 hover:bg-gray-600"
-            }`}
+          </Button>
+          <Button
+            className={shapeType === "rectangle" ? "text-white" : ""}
+            variant={shapeType === "rectangle" ? "default" : "outline"}
             style={
               shapeType === "rectangle"
                 ? { backgroundColor: theme.shapes.rectangle.color }
@@ -207,13 +200,10 @@ export default function Sidebar({
             onClick={() => handleShapeTypeChange("rectangle")}
           >
             Rectangle
-          </button>
-          <button
-            className={`px-2 py-1 rounded transition-colors ${
-              shapeType === "polygon"
-                ? "bg-purple-600 text-white"
-                : "bg-gray-700 hover:bg-gray-600"
-            }`}
+          </Button>
+          <Button
+            className={shapeType === "polygon" ? "text-white" : ""}
+            variant={shapeType === "polygon" ? "default" : "outline"}
             style={
               shapeType === "polygon"
                 ? { backgroundColor: theme.shapes.polygon.color }
@@ -222,7 +212,7 @@ export default function Sidebar({
             onClick={() => handleShapeTypeChange("polygon")}
           >
             Polygon
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -238,13 +228,13 @@ export default function Sidebar({
                 </p>
                 {points.length > 2 && (
                   <p className="mb-2">
-                    {/* Remove reference to clicking near first point */}
                     Click &quot;Complete Drawing&quot; when you&apos;re finished
                     adding points.
                   </p>
                 )}
-                <button
-                  className="px-2 py-1 rounded bg-green-600 hover:bg-green-700 text-white mt-2 mr-2"
+                <Button
+                  variant="default"
+                  className="mr-2 mt-2"
                   onClick={() => {
                     // Complete the polygon instead of canceling
                     setIsDrawingPolygon(false);
@@ -252,29 +242,31 @@ export default function Sidebar({
                   disabled={points.length < 3}
                 >
                   Complete Drawing
-                </button>
-                <button
-                  className="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white mt-2"
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="mt-2"
                   onClick={() => {
                     updateShapeState({ points: [] });
                     setIsDrawingPolygon(false);
                   }}
                 >
                   Cancel Drawing
-                </button>
+                </Button>
               </div>
             ) : points.length > 2 ? (
               <div>
                 <p className="mb-2">Polygon with {points.length} points</p>
-                <button
-                  className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white mt-2"
+                <Button
+                  variant="default"
+                  className="mt-2"
                   onClick={() => {
                     // Keep existing points when redrawing
                     setIsDrawingPolygon(true);
                   }}
                 >
                   Redraw Polygon
-                </button>
+                </Button>
               </div>
             ) : (
               <p className="text-gray-400">
@@ -296,36 +288,36 @@ export default function Sidebar({
 
             {/* Width/Radius X */}
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">
+              <label className="select-none block text-sm font-medium mb-1">
                 {shapeType === "rectangle" ? "Width" : "Radius X"} (km):{" "}
                 {radiusXInput}
               </label>
-              <input
-                type="range"
-                min="0.1"
-                max="100"
-                step="0.1"
-                value={radiusXInput}
-                onChange={(e) => handleValueChange(e, "radiusX")}
-                className="w-full"
+              <Slider
+                min={0.1}
+                max={100}
+                step={0.1}
+                value={[parseFloat(radiusXInput)]}
+                onValueChange={(values) =>
+                  handleSliderChange(values, "radiusX")
+                }
               />
             </div>
 
             {/* Height/Radius Y (only for ellipse and rectangle) */}
             {(shapeType === "ellipse" || shapeType === "rectangle") && (
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">
+                <label className="select-none block text-sm font-medium mb-1">
                   {shapeType === "rectangle" ? "Height" : "Radius Y"} (km):{" "}
                   {radiusYInput}
                 </label>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="100"
-                  step="0.1"
-                  value={radiusYInput}
-                  onChange={(e) => handleValueChange(e, "radiusY")}
-                  className="w-full"
+                <Slider
+                  min={0.1}
+                  max={100}
+                  step={0.1}
+                  value={[parseFloat(radiusYInput)]}
+                  onValueChange={(values) =>
+                    handleSliderChange(values, "radiusY")
+                  }
                 />
               </div>
             )}
@@ -333,17 +325,17 @@ export default function Sidebar({
             {/* Rotation (only for ellipse and rectangle) */}
             {(shapeType === "ellipse" || shapeType === "rectangle") && (
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">
+                <label className="select-none block text-sm font-medium mb-1">
                   Rotation (°): {rotationInput}
                 </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="360"
-                  step="1"
-                  value={rotationInput}
-                  onChange={(e) => handleValueChange(e, "rotation")}
-                  className="w-full"
+                <Slider
+                  min={0}
+                  max={360}
+                  step={1}
+                  value={[parseFloat(rotationInput)]}
+                  onValueChange={(values) =>
+                    handleSliderChange(values, "rotation")
+                  }
                 />
               </div>
             )}
@@ -356,9 +348,9 @@ export default function Sidebar({
       </div>
 
       <div className="space-y-2">
-        <button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded w-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ backgroundColor: theme.colors.primary }}
+        <Button
+          variant="default"
+          className="w-full"
           onClick={generateRandomSpot}
           disabled={
             (shapeState.shapeType === "polygon" &&
@@ -367,14 +359,11 @@ export default function Sidebar({
           }
         >
           Generate Random Point
-        </button>
+        </Button>
 
-        <button
-          className="border border-gray-500 hover:bg-gray-700 px-4 py-2 rounded w-full transition-colors"
-          onClick={clearSelection}
-        >
+        <Button variant="outline" className="w-full" onClick={clearSelection}>
           Clear Selection
-        </button>
+        </Button>
       </div>
 
       {randomLat !== null && randomLng !== null && (

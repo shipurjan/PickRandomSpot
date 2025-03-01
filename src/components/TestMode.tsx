@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { generateRandomPoint } from "@/lib/utils/randomPoint";
 import { ShapeState } from "@/types";
+import { Button } from "@/components/ui/button";
 
 interface TestModeProps {
   shapeState: ShapeState;
@@ -73,7 +74,7 @@ export default function TestMode({
       </div>
 
       <div className="mt-2">
-        <label className="block text-sm mb-1">Number of test points:</label>
+        <label className="select-none block text-sm mb-1">Number of test points:</label>
         <div className="flex space-x-2">
           <input
             type="number"
@@ -85,25 +86,25 @@ export default function TestMode({
             }
             className="bg-gray-700 text-white px-2 py-1 rounded w-24"
           />
-          <button
+          <Button
             onClick={generateTestPoints}
             disabled={isGenerating}
-            className={`px-2 py-1 rounded text-sm flex-grow ${
-              isGenerating ? "bg-gray-600" : "bg-yellow-600 hover:bg-yellow-500"
-            }`}
+            variant={isGenerating ? "outline" : "default"}
+            className={`text-sm flex-grow ${isGenerating ? "" : "bg-yellow-600 hover:bg-yellow-500"}`}
           >
             {isGenerating ? "Generating..." : "Generate Test Points"}
-          </button>
+          </Button>
         </div>
       </div>
 
       <div className="flex space-x-2 mt-2">
-        <button
+        <Button
           onClick={clearTestPoints}
-          className="px-2 py-1 rounded text-sm bg-red-700 hover:bg-red-600 w-full"
+          variant="destructive"
+          className="text-sm w-full"
         >
           Clear Test Points
-        </button>
+        </Button>
       </div>
 
       <p className="text-xs text-gray-400 mt-2">
