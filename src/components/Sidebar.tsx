@@ -381,6 +381,14 @@ export default function Sidebar({
             <p className="text-gray-400 text-xs mt-1">
               {toDMS(randomLat, true)}, {toDMS(randomLng, false)}
             </p>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${randomLat}%2C${randomLng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 w-full inline-flex items-center justify-center border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground cursor-pointer select-none whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] h-9 px-4 py-2"
+            >
+              Open in Google Maps
+            </a>
           </div>
         </div>
       )}
