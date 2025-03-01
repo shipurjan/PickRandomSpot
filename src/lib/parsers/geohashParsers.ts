@@ -1,6 +1,11 @@
 // src/lib/parsers/geohashParsers.ts
 import { createParser } from "nuqs";
-import { pointsToGeohashes, geohashesToPoints } from "@/lib/utils/geohash";
+import {
+  pointsToGeohashes,
+  geohashesToPoints,
+  geohashToPoint,
+  pointToGeohash,
+} from "@/lib/utils/geohash";
 import { Point } from "@/types";
 
 /**
@@ -20,7 +25,6 @@ export const parseAsGeohashPoints = createParser({
       // If not a string array, it might be the old point object format
       return JSON.parse(value) as Point[];
     } catch {
-      console.error("Error parsing points value:", value);
       return [];
     }
   },
@@ -35,18 +39,57 @@ export const parseAsGeohashPoints = createParser({
 /**
  * Parser for a single point as a geohash
  */
-export const parseAsGeohashPoint = createParser({
+export const parseAsGeohashPoint = createParser<Point | null>({
   parse(value: string | null) {
     if (!value) return null;
     try {
-      return geohashesToPoints([value])[0];
+      return geohashToPoint(value);
     } catch {
-      console.error("Error parsing geohash point:", value);
       return null;
     }
   },
   serialize(point: Point | null) {
     if (!point) return "";
-    return pointsToGeohashes([point])[0];
+    return pointToGeohash(point);
   },
 });
+
+/**
+ * Custom parsers for coordinate pairs - replaces separate lat/lng parameters
+ * with a single geohash parameter
+ */
+
+// For map center position
+export const parseAsMapPosition = createParser<{ lat: number; lng: number }>({
+  parse(value: string | null) {
+    if (!value) return null;
+    try {
+      return geohashToPoint(value);
+    } catch {
+      return null;
+    }
+  },
+  serialize(point) {
+    if (!point) return "";
+    return pointToGeohash(point);
+  },
+}).withDefault({ lat: 0, lng: 0 });
+
+// For shape center position (nullable)
+export const parseAsShapeCenter = createParser<Point | null>({
+  parse(value: string | null) {
+    if (!value) return null;
+    try {
+      return geohashToPoint(value);
+    } catch {
+      return null;
+    }
+  },
+  serialize(point) {
+    if (!point) return "";
+    return pointToGeohash(point);
+  },
+});
+
+// For random point position (nullable)
+export const parseAsRandomPoint = parseAsShapeCenter;

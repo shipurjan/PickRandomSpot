@@ -4,13 +4,14 @@ import dynamic from "next/dynamic";
 import Sidebar from "@/components/Sidebar";
 import NuqsProvider from "@/components/NuqsProvider";
 import { parseAsFloat, useQueryStates } from "nuqs";
-import { parseAsGeohashPoints } from "@/lib/parsers/geohashParsers";
+import {
+  parseAsGeohashPoints,
+  parseAsMapPosition,
+  parseAsShapeCenter,
+  parseAsRandomPoint,
+} from "@/lib/parsers/geohashParsers";
 import { Suspense, useState } from "react";
 import { ShapeState, ShapeType } from "@/types";
-import {
-  parseAsLatitude,
-  parseAsLongitude,
-} from "@/lib/parsers/coordinateParsers";
 
 // Dynamic import for Map to avoid SSR issues with Leaflet
 const MapWithNoSSR = dynamic(() => import("@/components/Map"), {
@@ -45,17 +46,15 @@ function HomeContent() {
     setTestPoints([]);
   };
 
-  // State for map view
+  // State for map view - now using a single 'map' parameter for position
   const [mapState, setMapState] = useQueryStates({
-    lat: parseAsLatitude.withDefault(0),
-    lng: parseAsLongitude.withDefault(0),
+    map: parseAsMapPosition,
     zoom: parseAsFloat.withDefault(2),
   });
 
-  // State for shape
+  // State for shape - now using a single 'center' parameter
   const [shapeState, setShapeState] = useQueryStates({
-    centerLat: parseAsLatitude,
-    centerLng: parseAsLongitude,
+    center: parseAsShapeCenter,
     radiusX: parseAsFloat.withDefault(20000), // Default 20km
     radiusY: parseAsFloat.withDefault(20000),
     rotation: parseAsFloat.withDefault(0),
@@ -64,14 +63,13 @@ function HomeContent() {
       serialize: (v) => v,
       defaultValue: "ellipse",
     },
-    // Use our geohash-based parser for points to make URLs shorter
+    // Already using geohash-based parser for points
     points: parseAsGeohashPoints.withDefault([]),
   });
 
-  // State for random point
+  // State for random point - using a single 'random' parameter
   const [randomPointState, setRandomPointState] = useQueryStates({
-    randomLat: parseAsLatitude,
-    randomLng: parseAsLongitude,
+    random: parseAsRandomPoint,
   });
 
   // Local state for polygon drawing mode
@@ -79,15 +77,25 @@ function HomeContent() {
 
   // Convert URL state to component state
   const convertedShapeState: ShapeState = {
-    center:
-      shapeState.centerLat !== null && shapeState.centerLng !== null
-        ? { lat: shapeState.centerLat, lng: shapeState.centerLng }
-        : null,
+    center: shapeState.center,
     radiusX: shapeState.radiusX,
     radiusY: shapeState.radiusY,
     rotation: shapeState.rotation,
     shapeType: shapeState.shapeType,
     points: shapeState.points,
+  };
+
+  // Convert from geohash map state to lat/lng format expected by components
+  const mappedMapState = {
+    lat: mapState.map.lat,
+    lng: mapState.map.lng,
+    zoom: mapState.zoom,
+  };
+
+  // Convert from geohash random point to lat/lng format
+  const mappedRandomPointState = {
+    randomLat: randomPointState.random?.lat ?? null,
+    randomLng: randomPointState.random?.lng ?? null,
   };
 
   // Update shape state as an object
@@ -96,8 +104,7 @@ function HomeContent() {
 
     // Handle center point updates
     if (newState.center !== undefined) {
-      updates.centerLat = newState.center?.lat ?? null;
-      updates.centerLng = newState.center?.lng ?? null;
+      updates.center = newState.center;
     }
 
     // Handle other properties
@@ -111,13 +118,48 @@ function HomeContent() {
     setShapeState(updates);
   };
 
+  // Update map state
+  const updateMapState = (
+    newState: Partial<{ lat: number; lng: number; zoom: number }>,
+  ) => {
+    const updates: Partial<typeof mapState> = {};
+
+    // Handle map position updates
+    if (newState.lat !== undefined || newState.lng !== undefined) {
+      updates.map = {
+        lat: newState.lat ?? mapState.map.lat,
+        lng: newState.lng ?? mapState.map.lng,
+      };
+    }
+
+    // Handle zoom
+    if (newState.zoom !== undefined) updates.zoom = newState.zoom;
+
+    setMapState(updates);
+  };
+
+  // Update random point state
+  const updateRandomPointState = (
+    newState: Partial<{ randomLat: number | null; randomLng: number | null }>,
+  ) => {
+    if (newState.randomLat !== undefined && newState.randomLng !== undefined) {
+      if (newState.randomLat === null || newState.randomLng === null) {
+        setRandomPointState({ random: null });
+      } else {
+        setRandomPointState({
+          random: { lat: newState.randomLat, lng: newState.randomLng },
+        });
+      }
+    }
+  };
+
   return (
     <div className="flex h-screen">
       <Sidebar
         shapeState={convertedShapeState}
         updateShapeState={updateShapeState}
-        randomPointState={randomPointState}
-        setRandomPointState={setRandomPointState}
+        randomPointState={mappedRandomPointState}
+        setRandomPointState={updateRandomPointState}
         isDrawingPolygon={isDrawingPolygon}
         setIsDrawingPolygon={setIsDrawingPolygon}
         addTestPoints={addTestPoints}
@@ -125,11 +167,11 @@ function HomeContent() {
       />
       <div className="flex-grow select-none">
         <MapWithNoSSR
-          mapState={mapState}
-          updateMapState={setMapState}
+          mapState={mappedMapState}
+          updateMapState={updateMapState}
           shapeState={convertedShapeState}
           updateShapeState={updateShapeState}
-          randomPointState={randomPointState}
+          randomPointState={mappedRandomPointState}
           isDrawingPolygon={isDrawingPolygon}
           testPoints={testPoints}
         />
