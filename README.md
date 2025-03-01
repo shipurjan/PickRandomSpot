@@ -55,7 +55,7 @@ npm install
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+4. Open [http://localhost:3000/PickRandomSpot](http://localhost:3000/PickRandomSpot) in your browser
 
 ## How to Use
 
