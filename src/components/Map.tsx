@@ -211,6 +211,7 @@ export default function MapComponent({
 
   return (
     <MapContainer
+      attributionControl={false}
       center={[lat, lng]}
       zoom={zoom}
       style={{ height: "100%", width: "100%" }}
@@ -220,7 +221,7 @@ export default function MapComponent({
       <LeafletIconFix />
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution={undefined}
       />
 
       <MapController

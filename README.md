@@ -1,4 +1,6 @@
-# PickRandomSpot 🌍🎲
+[![](docs/logo_128.png)](#-PickRandomSpot) 
+
+# PickRandomSpot
 
 ![An example screenshot](docs/showcase.png?raw=true "An example screenshot")
 
@@ -77,6 +79,14 @@ The application is optimized for smooth interactions and quick random point gene
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Credits
+
+This project uses third-party assets:
+
+- Dice icon by weareheroes from Drawicons Line Hand Drawn Icons collection (CC BY 4.0)
+
+See [ATTRIBUTION.md](./ATTRIBUTION.md) for full details.
 
 ---
 

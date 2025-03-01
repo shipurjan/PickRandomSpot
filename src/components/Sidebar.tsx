@@ -4,6 +4,7 @@ import { useEffect, useState, ChangeEvent, useCallback, useRef } from "react";
 import { generateRandomPoint } from "@/lib/utils/randomPoint";
 import { SidebarProps, ShapeType } from "@/types";
 import { theme } from "@/lib/theme";
+import Image from "next/image";
 import TestMode from "./TestMode";
 
 export default function Sidebar({
@@ -145,7 +146,15 @@ export default function Sidebar({
 
   return (
     <div className="w-80 bg-black shadow-md p-4 overflow-auto h-screen text-white">
-      <h1 className="text-2xl font-bold mb-6">PickRandomSpot</h1>
+      <div className="flex flex-col items-center justify-center select-none">
+        <Image
+          src="/logo.svg"
+          alt="PickRandomSpot logo"
+          width="64"
+          height="64"
+        />
+        <h1 className="text-2xl font-bold mb-2">PickRandomSpot</h1>
+      </div>
 
       <div className="mb-6">
         <h2 className="text-lg font-semibold mb-2">Instructions</h2>
