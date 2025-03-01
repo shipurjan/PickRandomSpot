@@ -14,7 +14,6 @@ import {
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { MapProps, Point } from "@/types";
-import { getShapeStyle } from "@/lib/theme";
 
 // Fix Leaflet icons in Next.js
 function LeafletIconFix() {
@@ -242,7 +241,7 @@ export default function MapComponent({
             radiusY,
             rotation,
           )}
-          pathOptions={{ color: "blue", fillColor: "#30f", fillOpacity: 0.2 }}
+          pathOptions={{ color: "black", fillColor: "black", fillOpacity: 0.2 }}
         />
       )}
 
@@ -255,7 +254,7 @@ export default function MapComponent({
             radiusY * 2, // Convert radius to full height
             rotation,
           )}
-          pathOptions={{ color: "blue", fillColor: "#30f", fillOpacity: 0.2 }}
+          pathOptions={{ color: "black", fillColor: "black", fillOpacity: 0.2 }}
         />
       )}
 
@@ -263,7 +262,7 @@ export default function MapComponent({
       {points.length >= 3 && (
         <Polygon
           positions={points.map((p) => [p.lat, p.lng])}
-          pathOptions={{ color: "blue", fillColor: "#30f", fillOpacity: 0.2 }}
+          pathOptions={{ color: "black", fillColor: "black", fillOpacity: 0.2 }}
         />
       )}
 
@@ -271,7 +270,7 @@ export default function MapComponent({
       {isDrawingPolygon && points.length > 0 && (
         <Polyline
           positions={points.map((p) => [p.lat, p.lng])}
-          pathOptions={{ color: getShapeStyle("polygon").color, weight: 2 }}
+          pathOptions={{ color: "black", weight: 3 }}
         />
       )}
 
@@ -283,10 +282,9 @@ export default function MapComponent({
             center={[point.lat, point.lng]}
             radius={5}
             pathOptions={{
-              color: index === 0 ? "#22c55e" : getShapeStyle("polygon").color,
-              fillColor:
-                index === 0 ? "#22c55e" : getShapeStyle("polygon").color,
-              fillOpacity: 1,
+              color: "black",
+              fillColor: "black",
+              fillOpacity: 0.2,
             }}
           />
         ))}
@@ -298,8 +296,8 @@ export default function MapComponent({
           center={[point[0], point[1]]}
           radius={3}
           pathOptions={{
-            color: "#ff0000",
-            fillColor: "#ff0000",
+            color: "red",
+            fillColor: "red",
             fillOpacity: 1.0,
             weight: 3,
           }}
