@@ -43,19 +43,19 @@ git clone https://github.com/shipurjan/PickRandomSpot.git
 cd PickRandomSpot
 ```
 
-2. Install dependencies
+1. Install dependencies
 
 ```bash
 npm install
 ```
 
-3. Run the development server
+1. Run the development server
 
 ```bash
 npm run dev
 ```
 
-4. Open [http://localhost:3000/PickRandomSpot](http://localhost:3000/PickRandomSpot) in your browser
+1. Open [http://localhost:3000/PickRandomSpot](http://localhost:3000/PickRandomSpot) in your browser
 
 ## How to Use
 
