@@ -3,9 +3,14 @@
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/Sidebar";
 import NuqsProvider from "@/components/NuqsProvider";
-import { parseAsFloat, parseAsJson, useQueryStates } from "nuqs";
+import { parseAsFloat, useQueryStates } from "nuqs";
+import { parseAsGeohashPoints } from "@/lib/parsers/geohashParsers";
 import { Suspense, useState } from "react";
-import { Point, ShapeState, ShapeType } from "@/types";
+import { ShapeState, ShapeType } from "@/types";
+import {
+  parseAsLatitude,
+  parseAsLongitude,
+} from "@/lib/parsers/coordinateParsers";
 
 // Dynamic import for Map to avoid SSR issues with Leaflet
 const MapWithNoSSR = dynamic(() => import("@/components/Map"), {
@@ -42,27 +47,31 @@ function HomeContent() {
 
   // State for map view
   const [mapState, setMapState] = useQueryStates({
-    lat: parseAsFloat.withDefault(0),
-    lng: parseAsFloat.withDefault(0),
+    lat: parseAsLatitude.withDefault(0),
+    lng: parseAsLongitude.withDefault(0),
     zoom: parseAsFloat.withDefault(2),
   });
 
   // State for shape
   const [shapeState, setShapeState] = useQueryStates({
-    centerLat: parseAsFloat,
-    centerLng: parseAsFloat,
+    centerLat: parseAsLatitude,
+    centerLng: parseAsLongitude,
     radiusX: parseAsFloat.withDefault(20000), // Default 20km
     radiusY: parseAsFloat.withDefault(20000),
     rotation: parseAsFloat.withDefault(0),
-    shapeType: { parse: parseShapeType, serialize: (v) => v, defaultValue: "ellipse" },
-    // @ts-expect-error  Parse json for points array (for polygon)
-    points: parseAsJson<Point[]>().withDefault([]),
+    shapeType: {
+      parse: parseShapeType,
+      serialize: (v) => v,
+      defaultValue: "ellipse",
+    },
+    // Use our geohash-based parser for points to make URLs shorter
+    points: parseAsGeohashPoints.withDefault([]),
   });
 
   // State for random point
   const [randomPointState, setRandomPointState] = useQueryStates({
-    randomLat: parseAsFloat,
-    randomLng: parseAsFloat,
+    randomLat: parseAsLatitude,
+    randomLng: parseAsLongitude,
   });
 
   // Local state for polygon drawing mode
