@@ -213,6 +213,7 @@ export default function MapComponent({
     <MapContainer
       attributionControl={false}
       center={[lat, lng]}
+      doubleClickZoom={false}
       zoom={zoom}
       style={{ height: "100%", width: "100%" }}
       zoomAnimation={true}
