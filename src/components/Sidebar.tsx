@@ -140,7 +140,7 @@ export default function Sidebar({
     [shapeType, updateShapeState, setIsDrawingPolygon],
   );
 
-  // Handle direct input changes for radius values
+  // Inside handleRadiusInputChange function in Sidebar.tsx
   const handleRadiusInputChange = useCallback(
     (
       value: string,
@@ -173,39 +173,49 @@ export default function Sidebar({
       // Parse the value and validate
       const parsedValue = parseFloat(value);
       if (!isNaN(parsedValue) && parsedValue >= 0) {
-        // Update the slider position (clamped to slider range)
-        if (parsedValue > 0) {
-          const sliderValue =
-            parsedValue <= 100 ? linearToLogarithmicScale(parsedValue) : 1; // If beyond max, set slider to max
-
-          switch (valueType) {
-            case "radiusX":
-              setRadiusXSlider(sliderValue);
-              break;
-            case "radiusY":
-              setRadiusYSlider(sliderValue);
-              break;
-            case "innerRadiusX":
-              setInnerRadiusXSlider(sliderValue);
-              break;
-            case "innerRadiusY":
-              setInnerRadiusYSlider(sliderValue);
-              break;
-          }
-        }
-
         // Set a debounce timer to update the actual state
         debounceTimerRef.current = setTimeout(() => {
           // Convert to meters for the state
-          const newRadius = parsedValue * 1000;
-          updateShapeState({ [valueType]: newRadius });
+          let newRadius = parsedValue * 1000;
 
+          // For inner radius, ensure it doesn't exceed the corresponding outer radius
+          if (valueType === "innerRadiusX" && newRadius > radiusX) {
+            newRadius = radiusX;
+            // Update the displayed value to match the constraint
+            setInnerRadiusXInput((radiusX / 1000).toString());
+          } else if (valueType === "innerRadiusY" && newRadius > radiusY) {
+            newRadius = radiusY;
+            // Update the displayed value to match the constraint
+            setInnerRadiusYInput((radiusY / 1000).toString());
+          }
+          // For outer radius, update the inner radius if it would exceed the new outer radius
+          else if (valueType === "radiusX" && innerRadiusX > newRadius) {
+            updateShapeState({
+              [valueType]: newRadius,
+              innerRadiusX: newRadius,
+            });
+            // Update the displayed value to match the constraint
+            setInnerRadiusXInput((newRadius / 1000).toString());
+            isChangingValues.current = false;
+            return;
+          } else if (valueType === "radiusY" && innerRadiusY > newRadius) {
+            updateShapeState({
+              [valueType]: newRadius,
+              innerRadiusY: newRadius,
+            });
+            // Update the displayed value to match the constraint
+            setInnerRadiusYInput((newRadius / 1000).toString());
+            isChangingValues.current = false;
+            return;
+          }
+
+          updateShapeState({ [valueType]: newRadius });
           // Mark that we're done changing
           isChangingValues.current = false;
         }, 500); // Longer delay for manual input
       }
     },
-    [updateShapeState],
+    [updateShapeState, radiusX, radiusY, innerRadiusX, innerRadiusY],
   );
 
   // Handle direct input changes for rotation

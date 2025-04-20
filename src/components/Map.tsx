@@ -1,5 +1,4 @@
-// src/components/Map.tsx
-"use client";
+// src/components/Map.tsx - Updated polygon rendering with holes
 import { useEffect, useCallback, useRef } from "react";
 import {
   MapContainer,
@@ -218,6 +217,10 @@ export default function MapComponent({
   } = shapeState;
   const { randomLat, randomLng } = randomPointState;
 
+  // Ensure inner dimensions don't exceed outer dimensions
+  const effectiveInnerRadiusX = Math.min(innerRadiusX, radiusX);
+  const effectiveInnerRadiusY = Math.min(innerRadiusY, radiusY);
+
   return (
     <MapContainer
       attributionControl={false}
@@ -242,61 +245,57 @@ export default function MapComponent({
         isDrawingPolygon={isDrawingPolygon}
       />
 
-      {/* Outer Ellipse */}
+      {/* Ellipse with hole */}
       {center && shapeType === "ellipse" && (
         <Polygon
-          positions={createEllipsePoints(
-            new L.LatLng(center.lat, center.lng),
-            radiusX,
-            radiusY,
-            rotation,
-          )}
+          positions={[
+            createEllipsePoints(
+              new L.LatLng(center.lat, center.lng),
+              radiusX,
+              radiusY,
+              rotation,
+            ),
+            // If inner radii > 0, add hole (with reversed order of points)
+            ...(effectiveInnerRadiusX > 0 || effectiveInnerRadiusY > 0
+              ? [
+                  createEllipsePoints(
+                    new L.LatLng(center.lat, center.lng),
+                    effectiveInnerRadiusX,
+                    effectiveInnerRadiusY,
+                    rotation,
+                  ).reverse(),
+                ]
+              : []),
+          ]}
           pathOptions={{ color: "black", fillColor: "black", fillOpacity: 0.2 }}
         />
       )}
 
-      {/* Inner Ellipse (hole) - only if inner radius is greater than 0 */}
-      {center &&
-        shapeType === "ellipse" &&
-        (innerRadiusX > 0 || innerRadiusY > 0) && (
-          <Polygon
-            positions={createEllipsePoints(
-              new L.LatLng(center.lat, center.lng),
-              innerRadiusX,
-              innerRadiusY,
-              rotation,
-            )}
-            pathOptions={{ color: "black", fillColor: "white", fillOpacity: 1 }}
-          />
-        )}
-
-      {/* Outer Rectangle */}
+      {/* Rectangle with hole */}
       {center && shapeType === "rectangle" && (
         <Polygon
-          positions={createRectanglePoints(
-            new L.LatLng(center.lat, center.lng),
-            radiusX * 2, // Convert radius to full width
-            radiusY * 2, // Convert radius to full height
-            rotation,
-          )}
+          positions={[
+            createRectanglePoints(
+              new L.LatLng(center.lat, center.lng),
+              radiusX * 2,
+              radiusY * 2,
+              rotation,
+            ),
+            // If inner dimensions > 0, add hole (with reversed order of points)
+            ...(effectiveInnerRadiusX > 0 || effectiveInnerRadiusY > 0
+              ? [
+                  createRectanglePoints(
+                    new L.LatLng(center.lat, center.lng),
+                    effectiveInnerRadiusX * 2,
+                    effectiveInnerRadiusY * 2,
+                    rotation,
+                  ).reverse(),
+                ]
+              : []),
+          ]}
           pathOptions={{ color: "black", fillColor: "black", fillOpacity: 0.2 }}
         />
       )}
-
-      {/* Inner Rectangle (hole) - only if inner radius is greater than 0 */}
-      {center &&
-        shapeType === "rectangle" &&
-        (innerRadiusX > 0 || innerRadiusY > 0) && (
-          <Polygon
-            positions={createRectanglePoints(
-              new L.LatLng(center.lat, center.lng),
-              innerRadiusX * 2, // Convert radius to full width
-              innerRadiusY * 2, // Convert radius to full height
-              rotation,
-            )}
-            pathOptions={{ color: "black", fillColor: "white", fillOpacity: 1 }}
-          />
-        )}
 
       {/* Polygon */}
       {points.length >= 3 && (

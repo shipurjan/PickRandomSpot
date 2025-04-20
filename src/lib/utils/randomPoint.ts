@@ -95,8 +95,12 @@ export function generateRandomPointInEllipse(
   innerRadiusY: number,
   rotation: number,
 ): [number, number] {
+  // Ensure inner radius is not larger than outer radius
+  const effectiveInnerRadiusX = Math.min(innerRadiusX, outerRadiusX);
+  const effectiveInnerRadiusY = Math.min(innerRadiusY, outerRadiusY);
+
   // If no inner radius, use the standard ellipse method
-  if (innerRadiusX <= 0 && innerRadiusY <= 0) {
+  if (effectiveInnerRadiusX <= 0 && effectiveInnerRadiusY <= 0) {
     return generateRandomPointInSimpleEllipse(
       centerLat,
       centerLng,
@@ -106,9 +110,23 @@ export function generateRandomPointInEllipse(
     );
   }
 
-  // Ensure inner radius is not larger than outer radius
-  const effectiveInnerRadiusX = Math.min(innerRadiusX, outerRadiusX);
-  const effectiveInnerRadiusY = Math.min(innerRadiusY, outerRadiusY);
+  // Handle the case where inner dimensions match outer dimensions
+  if (
+    effectiveInnerRadiusX === outerRadiusX &&
+    effectiveInnerRadiusY === outerRadiusY
+  ) {
+    // Generate a point on the ellipse boundary
+    const angle = Math.random() * 2 * Math.PI;
+    const rotationRad = (rotation * Math.PI) / 180;
+
+    const x = outerRadiusX * Math.cos(angle);
+    const y = outerRadiusY * Math.sin(angle);
+
+    const rotatedX = x * Math.cos(rotationRad) - y * Math.sin(rotationRad);
+    const rotatedY = x * Math.sin(rotationRad) + y * Math.cos(rotationRad);
+
+    return metersToLatLng([rotatedY, rotatedX], [centerLat, centerLng]);
+  }
 
   // Rejection sampling approach for donut shape
   const center: [number, number] = [centerLat, centerLng];
@@ -187,8 +205,12 @@ export function generateRandomPointInRectangle(
   innerHeight: number,
   rotation: number,
 ): [number, number] {
+  // Ensure inner dimensions aren't larger than outer dimensions
+  const effectiveInnerWidth = Math.min(innerWidth, outerWidth);
+  const effectiveInnerHeight = Math.min(innerHeight, outerHeight);
+
   // If no inner dimensions, use simple rectangle method
-  if (innerWidth <= 0 && innerHeight <= 0) {
+  if (effectiveInnerWidth <= 0 && effectiveInnerHeight <= 0) {
     return generateRandomPointInSimpleRectangle(
       centerLat,
       centerLng,
@@ -198,9 +220,40 @@ export function generateRandomPointInRectangle(
     );
   }
 
-  // Ensure inner dimensions aren't larger than outer dimensions
-  const effectiveInnerWidth = Math.min(innerWidth, outerWidth);
-  const effectiveInnerHeight = Math.min(innerHeight, outerHeight);
+  // Handle the case where inner dimensions match outer dimensions
+  if (
+    effectiveInnerWidth === outerWidth &&
+    effectiveInnerHeight === outerHeight
+  ) {
+    // Generate a point on the rectangle edge
+    const side = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+    const rotationRad = (rotation * Math.PI) / 180;
+
+    let x, y;
+    switch (side) {
+      case 0: // top
+        x = (Math.random() * 2 - 1) * (outerWidth / 2);
+        y = outerHeight / 2;
+        break;
+      case 1: // right
+        x = outerWidth / 2;
+        y = (Math.random() * 2 - 1) * (outerHeight / 2);
+        break;
+      case 2: // bottom
+        x = (Math.random() * 2 - 1) * (outerWidth / 2);
+        y = -outerHeight / 2;
+        break;
+      default: // left
+        x = -outerWidth / 2;
+        y = (Math.random() * 2 - 1) * (outerHeight / 2);
+    }
+
+    // Apply rotation
+    const rotatedX = x * Math.cos(rotationRad) - y * Math.sin(rotationRad);
+    const rotatedY = x * Math.sin(rotationRad) + y * Math.cos(rotationRad);
+
+    return metersToLatLng([rotatedY, rotatedX], [centerLat, centerLng]);
+  }
 
   // Rejection sampling approach for donut shape
   const center: [number, number] = [centerLat, centerLng];
@@ -392,6 +445,10 @@ export function generateRandomPoint(
     points,
   } = shapeState;
 
+  // Ensure inner dimensions don't exceed outer dimensions
+  const effectiveInnerRadiusX = Math.min(innerRadiusX, radiusX);
+  const effectiveInnerRadiusY = Math.min(innerRadiusY, radiusY);
+
   if (shapeType === "polygon") {
     if (points.length < 3) return null;
     return generateRandomPointInPolygon(points);
@@ -406,8 +463,8 @@ export function generateRandomPoint(
         center.lng,
         radiusX,
         radiusY,
-        innerRadiusX,
-        innerRadiusY,
+        effectiveInnerRadiusX,
+        effectiveInnerRadiusY,
         rotation,
       );
     case "rectangle":
@@ -416,8 +473,8 @@ export function generateRandomPoint(
         center.lng,
         radiusX * 2, // Convert radius to full width
         radiusY * 2, // Convert radius to full height
-        innerRadiusX * 2, // Convert inner radius to full width
-        innerRadiusY * 2, // Convert inner radius to full height
+        effectiveInnerRadiusX * 2, // Convert inner radius to full width
+        effectiveInnerRadiusY * 2, // Convert inner radius to full height
         rotation,
       );
     default:
