@@ -55,8 +55,8 @@ function HomeContent() {
   // State for shape - now using a single 'center' parameter
   const [shapeState, setShapeState] = useQueryStates({
     center: parseAsShapeCenter,
-    radiusX: parseAsFloat.withDefault(20000), // Default 20km
-    radiusY: parseAsFloat.withDefault(20000),
+    radiusX: parseAsFloat.withDefault(1000), // Default 1km (changed from 20000)
+    radiusY: parseAsFloat.withDefault(1000), // Default 1km (changed from 20000)
     rotation: parseAsFloat.withDefault(0),
     shapeType: {
       parse: parseShapeType,

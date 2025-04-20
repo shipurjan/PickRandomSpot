@@ -9,6 +9,11 @@ import TestMode from "./TestMode";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
+// Constants for logarithmic transformation
+const MIN_LOG_RADIUS = Math.log10(0.1); // 0.1 km = 100m
+const MAX_LOG_RADIUS = Math.log10(100); // 100 km
+const LOG_RANGE = MAX_LOG_RADIUS - MIN_LOG_RADIUS;
+
 export default function Sidebar({
   shapeState,
   updateShapeState,
@@ -27,17 +32,48 @@ export default function Sidebar({
   const [radiusYInput, setRadiusYInput] = useState((radiusY / 1000).toString());
   const [rotationInput, setRotationInput] = useState(rotation.toString());
 
+  // Store logarithmic slider values
+  const [radiusXSlider, setRadiusXSlider] = useState(
+    linearToLogarithmicScale(parseFloat(radiusXInput)),
+  );
+  const [radiusYSlider, setRadiusYSlider] = useState(
+    linearToLogarithmicScale(parseFloat(radiusYInput)),
+  );
+
   // Ref to track if we're in the middle of changing the values
   const isChangingValues = useRef(false);
   // Debounce timer ref
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Convert a linear value (km) to logarithmic slider position (0-1)
+  function linearToLogarithmicScale(linearValue: number): number {
+    // Ensure the value is within range
+    const clampedValue = Math.max(0.1, Math.min(100, linearValue));
+    // Convert to log scale and normalize to 0-1 range
+    return (Math.log10(clampedValue) - MIN_LOG_RADIUS) / LOG_RANGE;
+  }
+
+  // Convert logarithmic slider position (0-1) to linear value (km)
+  function logarithmicToLinearScale(sliderValue: number): number {
+    // Ensure the value is within 0-1 range
+    const clampedValue = Math.max(0, Math.min(1, sliderValue));
+    // Convert from normalized 0-1 to actual value
+    return +Math.pow(10, MIN_LOG_RADIUS + clampedValue * LOG_RANGE).toFixed(2);
+  }
+
   // Update inputs when values change from outside
   useEffect(() => {
     if (!isChangingValues.current) {
-      setRadiusXInput((radiusX / 1000).toString());
-      setRadiusYInput((radiusY / 1000).toString());
+      const radiusXKm = radiusX / 1000;
+      const radiusYKm = radiusY / 1000;
+
+      setRadiusXInput(radiusXKm.toString());
+      setRadiusYInput(radiusYKm.toString());
       setRotationInput(rotation.toString());
+
+      // Update slider positions
+      setRadiusXSlider(linearToLogarithmicScale(radiusXKm));
+      setRadiusYSlider(linearToLogarithmicScale(radiusYKm));
     }
   }, [radiusX, radiusY, rotation]);
 
@@ -61,18 +97,32 @@ export default function Sidebar({
     [shapeType, updateShapeState, setIsDrawingPolygon],
   );
 
-  // Handle slider value changes
-  const handleSliderChange = useCallback(
-    (values: number[], valueType: "radiusX" | "radiusY" | "rotation") => {
-      const value = values[0].toString();
+  // Handle radius slider changes using logarithmic scale
+  const handleRadiusSliderChange = useCallback(
+    (values: number[], valueType: "radiusX" | "radiusY") => {
+      const sliderValue = values[0];
 
-      // Update local input state
+      // Convert from slider position to actual kilometer value
+      const kmValue = logarithmicToLinearScale(sliderValue);
+
+      // Format display value with appropriate precision based on size
+      let displayValue: string;
+      if (kmValue < 1) {
+        // Use more decimal places for small values
+        displayValue = kmValue.toFixed(2);
+      } else if (kmValue < 10) {
+        displayValue = kmValue.toFixed(1);
+      } else {
+        displayValue = kmValue.toFixed(0);
+      }
+
+      // Update slider position state
       if (valueType === "radiusX") {
-        setRadiusXInput(value);
-      } else if (valueType === "radiusY") {
-        setRadiusYInput(value);
-      } else if (valueType === "rotation") {
-        setRotationInput(value);
+        setRadiusXSlider(sliderValue);
+        setRadiusXInput(displayValue);
+      } else {
+        setRadiusYSlider(sliderValue);
+        setRadiusYInput(displayValue);
       }
 
       // Mark that we're in the middle of changing
@@ -85,17 +135,38 @@ export default function Sidebar({
 
       // Set a debounce timer to update the actual state
       debounceTimerRef.current = setTimeout(() => {
-        if (valueType === "radiusX" || valueType === "radiusY") {
-          const newRadius = parseFloat(value) * 1000; // Convert km to meters
-          if (!isNaN(newRadius)) {
-            updateShapeState({ [valueType]: newRadius });
-          }
-        } else if (valueType === "rotation") {
-          const newRotation = parseFloat(value);
-          if (!isNaN(newRotation)) {
-            updateShapeState({ rotation: newRotation });
-          }
+        // Convert to meters for the state
+        const newRadius = kmValue * 1000;
+        updateShapeState({ [valueType]: newRadius });
+
+        // Mark that we're done changing
+        isChangingValues.current = false;
+      }, 1); // Small delay to debounce rapid changes
+    },
+    [updateShapeState],
+  );
+
+  // Handle rotation slider change (keep original linear scale for rotation)
+  const handleRotationSliderChange = useCallback(
+    (values: number[]) => {
+      const value = values[0].toString();
+      setRotationInput(value);
+
+      // Mark that we're in the middle of changing
+      isChangingValues.current = true;
+
+      // Clear any existing timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      // Set a debounce timer to update the actual state
+      debounceTimerRef.current = setTimeout(() => {
+        const newRotation = parseFloat(value);
+        if (!isNaN(newRotation)) {
+          updateShapeState({ rotation: newRotation });
         }
+
         // Mark that we're done changing
         isChangingValues.current = false;
       }, 1); // Small delay to debounce rapid changes
@@ -286,24 +357,24 @@ export default function Sidebar({
               </p>
             </div>
 
-            {/* Width/Radius X */}
+            {/* Width/Radius X - Using logarithmic scale */}
             <div className="mb-4">
               <label className="select-none block text-sm font-medium mb-1">
                 {shapeType === "rectangle" ? "Width" : "Radius X"} (km):{" "}
                 {radiusXInput}
               </label>
               <Slider
-                min={0.1}
-                max={100}
-                step={0.1}
-                value={[parseFloat(radiusXInput)]}
+                min={0}
+                max={1}
+                step={0.01}
+                value={[radiusXSlider]}
                 onValueChange={(values) =>
-                  handleSliderChange(values, "radiusX")
+                  handleRadiusSliderChange(values, "radiusX")
                 }
               />
             </div>
 
-            {/* Height/Radius Y (only for ellipse and rectangle) */}
+            {/* Height/Radius Y (only for ellipse and rectangle) - Using logarithmic scale */}
             {(shapeType === "ellipse" || shapeType === "rectangle") && (
               <div className="mb-4">
                 <label className="select-none block text-sm font-medium mb-1">
@@ -311,18 +382,18 @@ export default function Sidebar({
                   {radiusYInput}
                 </label>
                 <Slider
-                  min={0.1}
-                  max={100}
-                  step={0.1}
-                  value={[parseFloat(radiusYInput)]}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={[radiusYSlider]}
                   onValueChange={(values) =>
-                    handleSliderChange(values, "radiusY")
+                    handleRadiusSliderChange(values, "radiusY")
                   }
                 />
               </div>
             )}
 
-            {/* Rotation (only for ellipse and rectangle) */}
+            {/* Rotation (only for ellipse and rectangle) - Keeping linear scale */}
             {(shapeType === "ellipse" || shapeType === "rectangle") && (
               <div className="mb-4">
                 <label className="select-none block text-sm font-medium mb-1">
@@ -333,9 +404,7 @@ export default function Sidebar({
                   max={360}
                   step={1}
                   value={[parseFloat(rotationInput)]}
-                  onValueChange={(values) =>
-                    handleSliderChange(values, "rotation")
-                  }
+                  onValueChange={handleRotationSliderChange}
                 />
               </div>
             )}
