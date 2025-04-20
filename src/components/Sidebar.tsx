@@ -97,6 +97,79 @@ export default function Sidebar({
     [shapeType, updateShapeState, setIsDrawingPolygon],
   );
 
+  // Handle direct input changes for radius values
+  const handleRadiusInputChange = useCallback(
+    (value: string, valueType: "radiusX" | "radiusY") => {
+      // Update the input field
+      if (valueType === "radiusX") {
+        setRadiusXInput(value);
+      } else {
+        setRadiusYInput(value);
+      }
+
+      // Mark that we're in the middle of changing
+      isChangingValues.current = true;
+
+      // Clear any existing timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      // Parse the value and validate
+      const parsedValue = parseFloat(value);
+      if (!isNaN(parsedValue) && parsedValue > 0) {
+        // Update the slider position (clamped to slider range)
+        const sliderValue =
+          parsedValue <= 100 ? linearToLogarithmicScale(parsedValue) : 1; // If beyond max, set slider to max
+
+        if (valueType === "radiusX") {
+          setRadiusXSlider(sliderValue);
+        } else {
+          setRadiusYSlider(sliderValue);
+        }
+
+        // Set a debounce timer to update the actual state
+        debounceTimerRef.current = setTimeout(() => {
+          // Convert to meters for the state
+          const newRadius = parsedValue * 1000;
+          updateShapeState({ [valueType]: newRadius });
+
+          // Mark that we're done changing
+          isChangingValues.current = false;
+        }, 500); // Longer delay for manual input
+      }
+    },
+    [updateShapeState],
+  );
+
+  // Handle direct input changes for rotation
+  const handleRotationInputChange = useCallback(
+    (value: string) => {
+      // Update the input field
+      setRotationInput(value);
+
+      // Mark that we're in the middle of changing
+      isChangingValues.current = true;
+
+      // Clear any existing timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      // Parse the value
+      const parsedValue = parseFloat(value);
+      if (!isNaN(parsedValue)) {
+        // Set a debounce timer to update the actual state
+        debounceTimerRef.current = setTimeout(() => {
+          updateShapeState({ rotation: parsedValue });
+          // Mark that we're done changing
+          isChangingValues.current = false;
+        }, 500); // Longer delay for manual input
+      }
+    },
+    [updateShapeState],
+  );
+
   // Handle radius slider changes using logarithmic scale
   const handleRadiusSliderChange = useCallback(
     (values: number[], valueType: "radiusX" | "radiusY") => {
@@ -357,12 +430,23 @@ export default function Sidebar({
               </p>
             </div>
 
-            {/* Width/Radius X - Using logarithmic scale */}
+            {/* Width/Radius X - Using logarithmic scale with editable input */}
             <div className="mb-4">
-              <label className="select-none block text-sm font-medium mb-1">
-                {shapeType === "rectangle" ? "Width" : "Radius X"} (km):{" "}
-                {radiusXInput}
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="select-none text-sm font-medium">
+                  {shapeType === "rectangle" ? "Width" : "Radius X"} (km):
+                </label>
+                <input
+                  type="number"
+                  value={radiusXInput}
+                  onChange={(e) =>
+                    handleRadiusInputChange(e.target.value, "radiusX")
+                  }
+                  className="bg-gray-700 text-white px-2 py-0.5 rounded w-16 text-sm text-right"
+                  min="0.1"
+                  step="0.1"
+                />
+              </div>
               <Slider
                 min={0}
                 max={1}
@@ -374,13 +458,24 @@ export default function Sidebar({
               />
             </div>
 
-            {/* Height/Radius Y (only for ellipse and rectangle) - Using logarithmic scale */}
+            {/* Height/Radius Y (only for ellipse and rectangle) - Using logarithmic scale with editable input */}
             {(shapeType === "ellipse" || shapeType === "rectangle") && (
               <div className="mb-4">
-                <label className="select-none block text-sm font-medium mb-1">
-                  {shapeType === "rectangle" ? "Height" : "Radius Y"} (km):{" "}
-                  {radiusYInput}
-                </label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="select-none text-sm font-medium">
+                    {shapeType === "rectangle" ? "Height" : "Radius Y"} (km):
+                  </label>
+                  <input
+                    type="number"
+                    value={radiusYInput}
+                    onChange={(e) =>
+                      handleRadiusInputChange(e.target.value, "radiusY")
+                    }
+                    className="bg-gray-700 text-white px-2 py-0.5 rounded w-16 text-sm text-right"
+                    min="0.1"
+                    step="0.1"
+                  />
+                </div>
                 <Slider
                   min={0}
                   max={1}
@@ -393,17 +488,28 @@ export default function Sidebar({
               </div>
             )}
 
-            {/* Rotation (only for ellipse and rectangle) - Keeping linear scale */}
+            {/* Rotation (only for ellipse and rectangle) - Keeping linear scale with editable input */}
             {(shapeType === "ellipse" || shapeType === "rectangle") && (
               <div className="mb-4">
-                <label className="select-none block text-sm font-medium mb-1">
-                  Rotation (°): {rotationInput}
-                </label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="select-none text-sm font-medium">
+                    Rotation (°):
+                  </label>
+                  <input
+                    type="number"
+                    value={rotationInput}
+                    onChange={(e) => handleRotationInputChange(e.target.value)}
+                    className="bg-gray-700 text-white px-2 py-0.5 rounded w-16 text-sm text-right"
+                    min="0"
+                    max="360"
+                    step="1"
+                  />
+                </div>
                 <Slider
                   min={0}
                   max={360}
                   step={1}
-                  value={[parseFloat(rotationInput)]}
+                  value={[parseFloat(rotationInput) || 0]}
                   onValueChange={handleRotationSliderChange}
                 />
               </div>
