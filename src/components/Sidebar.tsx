@@ -58,7 +58,19 @@ export default function Sidebar({
     // Ensure the value is within 0-1 range
     const clampedValue = Math.max(0, Math.min(1, sliderValue));
     // Convert from normalized 0-1 to actual value
-    return +Math.pow(10, MIN_LOG_RADIUS + clampedValue * LOG_RANGE).toFixed(2);
+    const value = Math.pow(10, MIN_LOG_RADIUS + clampedValue * LOG_RANGE);
+    const precision = getPrecision(value);
+    return +value.toFixed(precision);
+
+    function getPrecision(val: number) {
+      if (val < 1) {
+        return 2;
+      } else if (val < 10) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
   }
 
   // Update inputs when values change from outside
