@@ -24,12 +24,27 @@ export default function Sidebar({
   isDrawingPolygon,
   setIsDrawingPolygon,
 }: SidebarProps) {
-  const { center, radiusX, radiusY, shapeType, rotation, points } = shapeState;
+  const {
+    center,
+    radiusX,
+    radiusY,
+    innerRadiusX,
+    innerRadiusY,
+    shapeType,
+    rotation,
+    points,
+  } = shapeState;
   const { randomLat, randomLng } = randomPointState;
 
   // Store input values in local state
   const [radiusXInput, setRadiusXInput] = useState((radiusX / 1000).toString());
   const [radiusYInput, setRadiusYInput] = useState((radiusY / 1000).toString());
+  const [innerRadiusXInput, setInnerRadiusXInput] = useState(
+    (innerRadiusX / 1000).toString(),
+  );
+  const [innerRadiusYInput, setInnerRadiusYInput] = useState(
+    (innerRadiusY / 1000).toString(),
+  );
   const [rotationInput, setRotationInput] = useState(rotation.toString());
 
   // Store logarithmic slider values
@@ -38,6 +53,12 @@ export default function Sidebar({
   );
   const [radiusYSlider, setRadiusYSlider] = useState(
     linearToLogarithmicScale(parseFloat(radiusYInput)),
+  );
+  const [innerRadiusXSlider, setInnerRadiusXSlider] = useState(
+    linearToLogarithmicScale(parseFloat(innerRadiusXInput) || 0.1),
+  );
+  const [innerRadiusYSlider, setInnerRadiusYSlider] = useState(
+    linearToLogarithmicScale(parseFloat(innerRadiusYInput) || 0.1),
   );
 
   // Ref to track if we're in the middle of changing the values
@@ -78,16 +99,26 @@ export default function Sidebar({
     if (!isChangingValues.current) {
       const radiusXKm = radiusX / 1000;
       const radiusYKm = radiusY / 1000;
+      const innerRadiusXKm = innerRadiusX / 1000;
+      const innerRadiusYKm = innerRadiusY / 1000;
 
       setRadiusXInput(radiusXKm.toString());
       setRadiusYInput(radiusYKm.toString());
+      setInnerRadiusXInput(innerRadiusXKm.toString());
+      setInnerRadiusYInput(innerRadiusYKm.toString());
       setRotationInput(rotation.toString());
 
       // Update slider positions
       setRadiusXSlider(linearToLogarithmicScale(radiusXKm));
       setRadiusYSlider(linearToLogarithmicScale(radiusYKm));
+      setInnerRadiusXSlider(
+        linearToLogarithmicScale(Math.max(innerRadiusXKm, 0.1)),
+      );
+      setInnerRadiusYSlider(
+        linearToLogarithmicScale(Math.max(innerRadiusYKm, 0.1)),
+      );
     }
-  }, [radiusX, radiusY, rotation]);
+  }, [radiusX, radiusY, innerRadiusX, innerRadiusY, rotation]);
 
   // Handle shape type change
   const handleShapeTypeChange = useCallback(
@@ -111,12 +142,24 @@ export default function Sidebar({
 
   // Handle direct input changes for radius values
   const handleRadiusInputChange = useCallback(
-    (value: string, valueType: "radiusX" | "radiusY") => {
+    (
+      value: string,
+      valueType: "radiusX" | "radiusY" | "innerRadiusX" | "innerRadiusY",
+    ) => {
       // Update the input field
-      if (valueType === "radiusX") {
-        setRadiusXInput(value);
-      } else {
-        setRadiusYInput(value);
+      switch (valueType) {
+        case "radiusX":
+          setRadiusXInput(value);
+          break;
+        case "radiusY":
+          setRadiusYInput(value);
+          break;
+        case "innerRadiusX":
+          setInnerRadiusXInput(value);
+          break;
+        case "innerRadiusY":
+          setInnerRadiusYInput(value);
+          break;
       }
 
       // Mark that we're in the middle of changing
@@ -129,15 +172,26 @@ export default function Sidebar({
 
       // Parse the value and validate
       const parsedValue = parseFloat(value);
-      if (!isNaN(parsedValue) && parsedValue > 0) {
+      if (!isNaN(parsedValue) && parsedValue >= 0) {
         // Update the slider position (clamped to slider range)
-        const sliderValue =
-          parsedValue <= 100 ? linearToLogarithmicScale(parsedValue) : 1; // If beyond max, set slider to max
+        if (parsedValue > 0) {
+          const sliderValue =
+            parsedValue <= 100 ? linearToLogarithmicScale(parsedValue) : 1; // If beyond max, set slider to max
 
-        if (valueType === "radiusX") {
-          setRadiusXSlider(sliderValue);
-        } else {
-          setRadiusYSlider(sliderValue);
+          switch (valueType) {
+            case "radiusX":
+              setRadiusXSlider(sliderValue);
+              break;
+            case "radiusY":
+              setRadiusYSlider(sliderValue);
+              break;
+            case "innerRadiusX":
+              setInnerRadiusXSlider(sliderValue);
+              break;
+            case "innerRadiusY":
+              setInnerRadiusYSlider(sliderValue);
+              break;
+          }
         }
 
         // Set a debounce timer to update the actual state
@@ -184,7 +238,10 @@ export default function Sidebar({
 
   // Handle radius slider changes using logarithmic scale
   const handleRadiusSliderChange = useCallback(
-    (values: number[], valueType: "radiusX" | "radiusY") => {
+    (
+      values: number[],
+      valueType: "radiusX" | "radiusY" | "innerRadiusX" | "innerRadiusY",
+    ) => {
       const sliderValue = values[0];
 
       // Convert from slider position to actual kilometer value
@@ -202,12 +259,23 @@ export default function Sidebar({
       }
 
       // Update slider position state
-      if (valueType === "radiusX") {
-        setRadiusXSlider(sliderValue);
-        setRadiusXInput(displayValue);
-      } else {
-        setRadiusYSlider(sliderValue);
-        setRadiusYInput(displayValue);
+      switch (valueType) {
+        case "radiusX":
+          setRadiusXSlider(sliderValue);
+          setRadiusXInput(displayValue);
+          break;
+        case "radiusY":
+          setRadiusYSlider(sliderValue);
+          setRadiusYInput(displayValue);
+          break;
+        case "innerRadiusX":
+          setInnerRadiusXSlider(sliderValue);
+          setInnerRadiusXInput(displayValue);
+          break;
+        case "innerRadiusY":
+          setInnerRadiusYSlider(sliderValue);
+          setInnerRadiusYInput(displayValue);
+          break;
       }
 
       // Mark that we're in the middle of changing
@@ -442,11 +510,12 @@ export default function Sidebar({
               </p>
             </div>
 
-            {/* Width/Radius X - Using logarithmic scale with editable input */}
+            {/* Outer dimensions */}
             <div className="mb-4">
               <div className="flex justify-between items-center mb-1">
                 <label className="select-none text-sm font-medium">
-                  {shapeType === "rectangle" ? "Width" : "Radius X"} (km):
+                  {shapeType === "rectangle" ? "Outer Width" : "Outer Radius X"}{" "}
+                  (km):
                 </label>
                 <input
                   type="number"
@@ -470,12 +539,14 @@ export default function Sidebar({
               />
             </div>
 
-            {/* Height/Radius Y (only for ellipse and rectangle) - Using logarithmic scale with editable input */}
             {(shapeType === "ellipse" || shapeType === "rectangle") && (
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-1">
                   <label className="select-none text-sm font-medium">
-                    {shapeType === "rectangle" ? "Height" : "Radius Y"} (km):
+                    {shapeType === "rectangle"
+                      ? "Outer Height"
+                      : "Outer Radius Y"}{" "}
+                    (km):
                   </label>
                   <input
                     type="number"
@@ -500,7 +571,68 @@ export default function Sidebar({
               </div>
             )}
 
-            {/* Rotation (only for ellipse and rectangle) - Keeping linear scale with editable input */}
+            {/* Inner dimensions */}
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-1">
+                <label className="select-none text-sm font-medium">
+                  {shapeType === "rectangle" ? "Inner Width" : "Inner Radius X"}{" "}
+                  (km):
+                </label>
+                <input
+                  type="number"
+                  value={innerRadiusXInput}
+                  onChange={(e) =>
+                    handleRadiusInputChange(e.target.value, "innerRadiusX")
+                  }
+                  className="bg-gray-700 text-white px-2 py-0.5 rounded w-16 text-sm text-right"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+              <Slider
+                min={0}
+                max={1}
+                step={0.01}
+                value={[innerRadiusXSlider]}
+                onValueChange={(values) =>
+                  handleRadiusSliderChange(values, "innerRadiusX")
+                }
+              />
+            </div>
+
+            {(shapeType === "ellipse" || shapeType === "rectangle") && (
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="select-none text-sm font-medium">
+                    {shapeType === "rectangle"
+                      ? "Inner Height"
+                      : "Inner Radius Y"}{" "}
+                    (km):
+                  </label>
+                  <input
+                    type="number"
+                    value={innerRadiusYInput}
+                    onChange={(e) =>
+                      handleRadiusInputChange(e.target.value, "innerRadiusY")
+                    }
+                    className="bg-gray-700 text-white px-2 py-0.5 rounded w-16 text-sm text-right"
+                    min="0"
+                    step="0.1"
+                  />
+                </div>
+                <Slider
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={[innerRadiusYSlider]}
+                  onValueChange={(values) =>
+                    handleRadiusSliderChange(values, "innerRadiusY")
+                  }
+                />
+              </div>
+            )}
+
+            {/* Rotation */}
             {(shapeType === "ellipse" || shapeType === "rectangle") && (
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-1">

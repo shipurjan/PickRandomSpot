@@ -32,7 +32,7 @@ function LeafletIconFix() {
   return null;
 }
 
-// Create a rotated ellipse or polygon using points
+// Create a rotated ellipse using points
 function createEllipsePoints(
   center: L.LatLng,
   radiusX: number,
@@ -65,6 +65,7 @@ function createEllipsePoints(
   return points;
 }
 
+// Create a rotated rectangle using points
 function createRectanglePoints(
   center: L.LatLng,
   width: number,
@@ -205,7 +206,16 @@ export default function MapComponent({
   testPoints = [], // Add default empty array
 }: MapProps) {
   const { lat, lng, zoom } = mapState;
-  const { center, radiusX, radiusY, shapeType, rotation, points } = shapeState;
+  const {
+    center,
+    radiusX,
+    radiusY,
+    innerRadiusX,
+    innerRadiusY,
+    shapeType,
+    rotation,
+    points,
+  } = shapeState;
   const { randomLat, randomLng } = randomPointState;
 
   return (
@@ -232,7 +242,7 @@ export default function MapComponent({
         isDrawingPolygon={isDrawingPolygon}
       />
 
-      {/* Ellipse (rendered as polygon) */}
+      {/* Outer Ellipse */}
       {center && shapeType === "ellipse" && (
         <Polygon
           positions={createEllipsePoints(
@@ -245,7 +255,22 @@ export default function MapComponent({
         />
       )}
 
-      {/* Rectangle */}
+      {/* Inner Ellipse (hole) - only if inner radius is greater than 0 */}
+      {center &&
+        shapeType === "ellipse" &&
+        (innerRadiusX > 0 || innerRadiusY > 0) && (
+          <Polygon
+            positions={createEllipsePoints(
+              new L.LatLng(center.lat, center.lng),
+              innerRadiusX,
+              innerRadiusY,
+              rotation,
+            )}
+            pathOptions={{ color: "black", fillColor: "white", fillOpacity: 1 }}
+          />
+        )}
+
+      {/* Outer Rectangle */}
       {center && shapeType === "rectangle" && (
         <Polygon
           positions={createRectanglePoints(
@@ -257,6 +282,21 @@ export default function MapComponent({
           pathOptions={{ color: "black", fillColor: "black", fillOpacity: 0.2 }}
         />
       )}
+
+      {/* Inner Rectangle (hole) - only if inner radius is greater than 0 */}
+      {center &&
+        shapeType === "rectangle" &&
+        (innerRadiusX > 0 || innerRadiusY > 0) && (
+          <Polygon
+            positions={createRectanglePoints(
+              new L.LatLng(center.lat, center.lng),
+              innerRadiusX * 2, // Convert radius to full width
+              innerRadiusY * 2, // Convert radius to full height
+              rotation,
+            )}
+            pathOptions={{ color: "black", fillColor: "white", fillOpacity: 1 }}
+          />
+        )}
 
       {/* Polygon */}
       {points.length >= 3 && (

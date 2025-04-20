@@ -20,10 +20,12 @@ export interface CircleState {
 
 export interface ShapeState {
   center: Point | null;
-  // For ellipse: radiusX/radiusY in meters
-  // For rectangle: width/height in meters
+  // For ellipse/rectangle: outer radiusX/radiusY in meters
   radiusX: number;
   radiusY: number;
+  // For ellipse/rectangle: inner radiusX/radiusY in meters
+  innerRadiusX: number;
+  innerRadiusY: number;
   // For polygon: array of points
   points: Point[];
   // Current active shape

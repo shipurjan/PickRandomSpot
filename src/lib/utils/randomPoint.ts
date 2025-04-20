@@ -18,8 +18,141 @@ export function metersToLatLng(
   return [baseLat + latOffset, baseLng + lngOffset];
 }
 
-// Generate a random point within an ellipse
+// Check if a point is inside an ellipse
+function isPointInEllipse(
+  point: [number, number],
+  center: [number, number],
+  radiusX: number,
+  radiusY: number,
+  rotation: number,
+): boolean {
+  // Convert rotation to radians
+  const rotationRad = (rotation * Math.PI) / 180;
+
+  // Convert point to meters from center
+  const [pointLat, pointLng] = point;
+  const [centerLat, centerLng] = center;
+
+  // Calculate meters differences
+  const latDiffMeters = (pointLat - centerLat) * 111111;
+  const lngDiffMeters =
+    (pointLng - centerLng) * (111111 * Math.cos((centerLat * Math.PI) / 180));
+
+  // Apply rotation to get position in ellipse coordinates
+  const x =
+    latDiffMeters * Math.sin(rotationRad) +
+    lngDiffMeters * Math.cos(rotationRad);
+  const y =
+    latDiffMeters * Math.cos(rotationRad) -
+    lngDiffMeters * Math.sin(rotationRad);
+
+  // Check if point is in ellipse using the standard ellipse equation
+  const normalizedX = x / radiusX;
+  const normalizedY = y / radiusY;
+
+  return normalizedX * normalizedX + normalizedY * normalizedY <= 1;
+}
+
+// Check if a point is inside a rectangle
+function isPointInRectangle(
+  point: [number, number],
+  center: [number, number],
+  width: number,
+  height: number,
+  rotation: number,
+): boolean {
+  // Convert rotation to radians
+  const rotationRad = (rotation * Math.PI) / 180;
+
+  // Convert point to meters from center
+  const [pointLat, pointLng] = point;
+  const [centerLat, centerLng] = center;
+
+  // Calculate meters differences
+  const latDiffMeters = (pointLat - centerLat) * 111111;
+  const lngDiffMeters =
+    (pointLng - centerLng) * (111111 * Math.cos((centerLat * Math.PI) / 180));
+
+  // Apply rotation to get position in rectangle coordinates
+  const x =
+    latDiffMeters * Math.sin(rotationRad) +
+    lngDiffMeters * Math.cos(rotationRad);
+  const y =
+    latDiffMeters * Math.cos(rotationRad) -
+    lngDiffMeters * Math.sin(rotationRad);
+
+  // Check if point is inside rectangle bounds
+  return Math.abs(x) <= width / 2 && Math.abs(y) <= height / 2;
+}
+
+// Generate a random point in a donut-shaped ellipse
 export function generateRandomPointInEllipse(
+  centerLat: number,
+  centerLng: number,
+  outerRadiusX: number,
+  outerRadiusY: number,
+  innerRadiusX: number,
+  innerRadiusY: number,
+  rotation: number,
+): [number, number] {
+  // If no inner radius, use the standard ellipse method
+  if (innerRadiusX <= 0 && innerRadiusY <= 0) {
+    return generateRandomPointInSimpleEllipse(
+      centerLat,
+      centerLng,
+      outerRadiusX,
+      outerRadiusY,
+      rotation,
+    );
+  }
+
+  // Ensure inner radius is not larger than outer radius
+  const effectiveInnerRadiusX = Math.min(innerRadiusX, outerRadiusX);
+  const effectiveInnerRadiusY = Math.min(innerRadiusY, outerRadiusY);
+
+  // Rejection sampling approach for donut shape
+  const center: [number, number] = [centerLat, centerLng];
+  const maxAttempts = 1000;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Generate a point using the simple method (this gives uniform distribution in ellipse)
+    const point = generateRandomPointInSimpleEllipse(
+      centerLat,
+      centerLng,
+      outerRadiusX,
+      outerRadiusY,
+      rotation,
+    );
+
+    // Check if point is outside inner ellipse
+    if (
+      !isPointInEllipse(
+        point,
+        center,
+        effectiveInnerRadiusX,
+        effectiveInnerRadiusY,
+        rotation,
+      )
+    ) {
+      return point;
+    }
+  }
+
+  // Fallback to a point on the outer ellipse boundary if we couldn't find a valid one
+  const angle = Math.random() * 2 * Math.PI;
+  const rotationRad = (rotation * Math.PI) / 180;
+
+  const x = outerRadiusX * Math.cos(angle);
+  const y = outerRadiusY * Math.sin(angle);
+
+  const rotatedX = x * Math.cos(rotationRad) - y * Math.sin(rotationRad);
+  const rotatedY = x * Math.sin(rotationRad) + y * Math.cos(rotationRad);
+
+  return metersToLatLng([rotatedY, rotatedX], [centerLat, centerLng]);
+}
+
+// Generate a random point in a simple ellipse (no hole)
+export function generateRandomPointInSimpleEllipse(
   centerLat: number,
   centerLng: number,
   radiusX: number,
@@ -44,8 +177,92 @@ export function generateRandomPointInEllipse(
   return metersToLatLng([rotatedY, rotatedX], [centerLat, centerLng]);
 }
 
-// Generate a random point within a rectangle
+// Generate a random point in a donut-shaped rectangle
 export function generateRandomPointInRectangle(
+  centerLat: number,
+  centerLng: number,
+  outerWidth: number,
+  outerHeight: number,
+  innerWidth: number,
+  innerHeight: number,
+  rotation: number,
+): [number, number] {
+  // If no inner dimensions, use simple rectangle method
+  if (innerWidth <= 0 && innerHeight <= 0) {
+    return generateRandomPointInSimpleRectangle(
+      centerLat,
+      centerLng,
+      outerWidth,
+      outerHeight,
+      rotation,
+    );
+  }
+
+  // Ensure inner dimensions aren't larger than outer dimensions
+  const effectiveInnerWidth = Math.min(innerWidth, outerWidth);
+  const effectiveInnerHeight = Math.min(innerHeight, outerHeight);
+
+  // Rejection sampling approach for donut shape
+  const center: [number, number] = [centerLat, centerLng];
+  const maxAttempts = 1000;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Generate a point in the outer rectangle
+    const point = generateRandomPointInSimpleRectangle(
+      centerLat,
+      centerLng,
+      outerWidth,
+      outerHeight,
+      rotation,
+    );
+
+    // Check if point is outside the inner rectangle
+    if (
+      !isPointInRectangle(
+        point,
+        center,
+        effectiveInnerWidth,
+        effectiveInnerHeight,
+        rotation,
+      )
+    ) {
+      return point;
+    }
+  }
+
+  // Fallback to a point on the outer rectangle edge if we couldn't find a valid one
+  const side = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+  const rotationRad = (rotation * Math.PI) / 180;
+
+  let x, y;
+
+  switch (side) {
+    case 0: // top
+      x = (Math.random() * 2 - 1) * (outerWidth / 2);
+      y = outerHeight / 2;
+      break;
+    case 1: // right
+      x = outerWidth / 2;
+      y = (Math.random() * 2 - 1) * (outerHeight / 2);
+      break;
+    case 2: // bottom
+      x = (Math.random() * 2 - 1) * (outerWidth / 2);
+      y = -outerHeight / 2;
+      break;
+    default: // left
+      x = -outerWidth / 2;
+      y = (Math.random() * 2 - 1) * (outerHeight / 2);
+  }
+
+  // Apply rotation
+  const rotatedX = x * Math.cos(rotationRad) - y * Math.sin(rotationRad);
+  const rotatedY = x * Math.sin(rotationRad) + y * Math.cos(rotationRad);
+
+  return metersToLatLng([rotatedY, rotatedX], [centerLat, centerLng]);
+}
+
+// Generate a random point in a simple rectangle (no hole)
+export function generateRandomPointInSimpleRectangle(
   centerLat: number,
   centerLng: number,
   width: number,
@@ -164,7 +381,16 @@ function findPolygonCentroid(polygon: Point[]): Point | null {
 export function generateRandomPoint(
   shapeState: ShapeState,
 ): [number, number] | null {
-  const { center, radiusX, radiusY, shapeType, rotation, points } = shapeState;
+  const {
+    center,
+    radiusX,
+    radiusY,
+    innerRadiusX,
+    innerRadiusY,
+    shapeType,
+    rotation,
+    points,
+  } = shapeState;
 
   if (shapeType === "polygon") {
     if (points.length < 3) return null;
@@ -180,14 +406,18 @@ export function generateRandomPoint(
         center.lng,
         radiusX,
         radiusY,
+        innerRadiusX,
+        innerRadiusY,
         rotation,
       );
     case "rectangle":
       return generateRandomPointInRectangle(
         center.lat,
         center.lng,
-        radiusX * 2, // Convert radius to width
-        radiusY * 2, // Convert radius to height
+        radiusX * 2, // Convert radius to full width
+        radiusY * 2, // Convert radius to full height
+        innerRadiusX * 2, // Convert inner radius to full width
+        innerRadiusY * 2, // Convert inner radius to full height
         rotation,
       );
     default:

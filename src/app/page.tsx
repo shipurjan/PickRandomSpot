@@ -52,11 +52,13 @@ function HomeContent() {
     zoom: parseAsFloat.withDefault(2),
   });
 
-  // State for shape - now using a single 'center' parameter
+  // State for shape - now with inner radius parameters
   const [shapeState, setShapeState] = useQueryStates({
     center: parseAsShapeCenter,
-    radiusX: parseAsFloat.withDefault(1000), // Default 1km (changed from 20000)
-    radiusY: parseAsFloat.withDefault(1000), // Default 1km (changed from 20000)
+    radiusX: parseAsFloat.withDefault(1000), // Default 1km (outer)
+    radiusY: parseAsFloat.withDefault(1000), // Default 1km (outer)
+    innerRadiusX: parseAsFloat.withDefault(0), // Default 0 (solid shape)
+    innerRadiusY: parseAsFloat.withDefault(0), // Default 0 (solid shape)
     rotation: parseAsFloat.withDefault(0),
     shapeType: {
       parse: parseShapeType,
@@ -80,6 +82,8 @@ function HomeContent() {
     center: shapeState.center,
     radiusX: shapeState.radiusX,
     radiusY: shapeState.radiusY,
+    innerRadiusX: shapeState.innerRadiusX,
+    innerRadiusY: shapeState.innerRadiusY,
     rotation: shapeState.rotation,
     shapeType: shapeState.shapeType,
     points: shapeState.points,
@@ -110,6 +114,8 @@ function HomeContent() {
     // Handle other properties
     if (newState.radiusX !== undefined) updates.radiusX = newState.radiusX;
     if (newState.radiusY !== undefined) updates.radiusY = newState.radiusY;
+    if (newState.innerRadiusX !== undefined) updates.innerRadiusX = newState.innerRadiusX;
+    if (newState.innerRadiusY !== undefined) updates.innerRadiusY = newState.innerRadiusY;
     if (newState.rotation !== undefined) updates.rotation = newState.rotation;
     if (newState.shapeType !== undefined)
       updates.shapeType = newState.shapeType;
